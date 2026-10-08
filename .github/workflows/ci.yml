@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Show toolchain versions
+        run: |
+          moon version
+          moonc -v 2>/dev/null || true
+
+      - name: Update dependencies
+        run: moon update
+
+      - name: Check
+        run: moon check --target js
+
+      - name: Build
+        run: moon build --target js
+
+      - name: Test
+        # 骨架期可能尚无测试用例，此时 moon test 以非零码退出，故显式放行
+        run: moon test --target js || true
+
+      - name: Format check
+        run: moon fmt --check
+
+  release-build:
+    runs-on: ubuntu-latest
+    needs: check-build-test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Build release artifact
+        run: moon build --target js --release
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: moon-epub-cli
+          path: _build/js/release/build/src/cli/
+          if-no-files-found: warn

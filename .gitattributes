@@ -1,0 +1,32 @@
+# 统一换行符策略：仓库内一律存 LF，检出时按平台自动转换。
+# 避免 Windows 开发机上出现整文件级的虚假 diff。
+* text=auto eol=lf
+
+# MoonBit 源码与配置
+*.mbt text eol=lf
+*.mbti text eol=lf
+moon.mod text eol=lf
+moon.pkg text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+
+# 文档
+*.md text eol=lf
+
+# Shell 脚本必须保持 LF，否则在 Unix 环境无法执行
+*.sh text eol=lf
+*.ps1 text eol=crlf
+
+# 二进制资源不做转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.mp3 binary
+*.epub binary
