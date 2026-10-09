@@ -1,11 +1,43 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "aoliaoxiaoxin/moon_epub/src/assets"
 
+import {
+  "aoliaoxiaoxin/moon_epub/src/model",
+  "moonbitlang/core/debug",
+}
+
 // Values
+pub let base_stylesheet : String
+
+pub fn base_stylesheet_resource(String) -> @model.Resource
+
+pub fn compose_stylesheet(String) -> String
+
+pub fn is_font_type(String) -> Bool
+
+pub fn is_image_type(String) -> Bool
+
+pub fn mime_type_of(String) -> String
+
+pub fn stylesheet_resource(String, String) -> @model.Resource
 
 // Errors
 
 // Types and methods
+pub struct ResourceRegistry {
+  resources : Array[@model.Resource]
+} derive(@debug.Debug)
+pub fn ResourceRegistry::add(Self, @model.Resource) -> Bool
+pub fn ResourceRegistry::add_stylesheet(Self, String, String) -> Bool
+pub fn ResourceRegistry::by_prefix(Self, String) -> Array[@model.Resource]
+pub fn ResourceRegistry::contains(Self, String) -> Bool
+pub fn ResourceRegistry::find(Self, String) -> @model.Resource?
+pub fn ResourceRegistry::is_empty(Self) -> Bool
+pub fn ResourceRegistry::length(Self) -> Int
+pub fn ResourceRegistry::manifest_items(Self) -> Array[@model.ManifestItem]
+pub fn ResourceRegistry::new() -> Self
+pub fn ResourceRegistry::register(Self, String, Bytes) -> Bool
+pub fn ResourceRegistry::resources(Self) -> Array[@model.Resource]
 
 // Type aliases
 
