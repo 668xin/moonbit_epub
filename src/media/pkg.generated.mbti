@@ -1,11 +1,56 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "aoliaoxiaoxin/moon_epub/src/media"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
+pub fn format_clock_ms(Int) -> String
+
+pub fn render_smil(Overlay, SmilOptions) -> String
 
 // Errors
 
 // Types and methods
+pub struct AudioClip {
+  src : String
+  clip_begin : String
+  clip_end : String
+} derive(Eq, @debug.Debug)
+pub fn AudioClip::from_millis(String, Int, Int) -> Self
+pub fn AudioClip::new(String, String, String) -> Self
+
+pub struct Overlay {
+  seqs : Array[Seq]
+} derive(Eq, @debug.Debug)
+pub fn Overlay::add_seq(Self, Seq) -> Unit
+pub fn Overlay::is_empty(Self) -> Bool
+pub fn Overlay::new() -> Self
+pub fn Overlay::seq_count(Self) -> Int
+
+pub struct Par {
+  id : String
+  text_src : String
+  audio : AudioClip
+} derive(Eq, @debug.Debug)
+pub fn Par::new(String, String, AudioClip) -> Self
+
+pub struct Seq {
+  id : String
+  textref : String
+  epub_type : String?
+  pars : Array[Par]
+} derive(Eq, @debug.Debug)
+pub fn Seq::add_par(Self, Par) -> Unit
+pub fn Seq::new(String, String, epub_type? : String) -> Self
+pub fn Seq::par_count(Self) -> Int
+
+pub struct SmilOptions {
+  mut language : String?
+} derive(@debug.Debug)
+pub fn SmilOptions::new() -> Self
+pub fn SmilOptions::set_language(Self, String) -> Unit
 
 // Type aliases
 
