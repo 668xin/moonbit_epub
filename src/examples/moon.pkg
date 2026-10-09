@@ -1,6 +1,6 @@
 import {
-  "aoliaoxiaoxin/moon_epub/src/spec",
-  "aoliaoxiaoxin/moon_epub/src/model",
-  "aoliaoxiaoxin/moon_epub/src/assets",
-  "aoliaoxiaoxin/moon_epub/src/a11y",
+  "668xin/moon_epub/src/spec",
+  "668xin/moon_epub/src/model",
+  "668xin/moon_epub/src/assets",
+  "668xin/moon_epub/src/a11y",
 }

@@ -27,7 +27,7 @@ XHTML5 内容文档、样式与资源管理、Media Overlays 朗读同步、OCF/
 ## 安装
 
 ```bash
-moon add aoliaoxiaoxin/moon_epub
+moon add 668xin/moon_epub
 ```
 
 > 本库的 `preferred_target` 为 `js`。使用本机的 `wasm-gc` 后端时，`println`

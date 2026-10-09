@@ -1,10 +1,10 @@
 import {
-  "aoliaoxiaoxin/moon_epub/src/spec",
-  "aoliaoxiaoxin/moon_epub/src/model",
-  "aoliaoxiaoxin/moon_epub/src/xhtml",
-  "aoliaoxiaoxin/moon_epub/src/opf",
-  "aoliaoxiaoxin/moon_epub/src/nav",
-  "aoliaoxiaoxin/moon_epub/src/zip",
+  "668xin/moon_epub/src/spec",
+  "668xin/moon_epub/src/model",
+  "668xin/moon_epub/src/xhtml",
+  "668xin/moon_epub/src/opf",
+  "668xin/moon_epub/src/nav",
+  "668xin/moon_epub/src/zip",
   "moonbitlang/core/debug",
 }
 

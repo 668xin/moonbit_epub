@@ -1,6 +1,6 @@
 import {
-  "aoliaoxiaoxin/moon_epub/src/spec",
-  "aoliaoxiaoxin/moon_epub/src/model",
+  "668xin/moon_epub/src/spec",
+  "668xin/moon_epub/src/model",
   "moonbitlang/core/debug",
 }
 

@@ -7,7 +7,7 @@
 // js 后端下 check / build / test / run 全部正常。
 // native 后端需要系统 C 编译器（本机未安装）。
 
-name = "aoliaoxiaoxin/moon_epub"
+name = "668xin/moon_epub"
 
 version = "0.1.0"
 

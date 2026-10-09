@@ -1,5 +1,5 @@
 import {
-  "aoliaoxiaoxin/moon_epub/src/spec",
+  "668xin/moon_epub/src/spec",
   "moonbitlang/core/debug",
   "moonbitlang/core/encoding/utf8",
 }
