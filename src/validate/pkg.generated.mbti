@@ -1,11 +1,71 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "aoliaoxiaoxin/moon_epub/src/validate"
 
+import {
+  "aoliaoxiaoxin/moon_epub/src/model",
+  "moonbitlang/core/debug",
+}
+
 // Values
+pub fn validate_book(@model.Book) -> Report
+
+pub fn validate_chapters(Array[@model.Chapter]) -> Report
+
+pub fn validate_container(Array[ContainerEntry]) -> Report
+
+pub fn validate_manifest(@model.Manifest) -> Report
+
+pub fn validate_metadata(@model.Metadata) -> Report
+
+pub fn validate_reachability(Array[@model.Chapter], Array[@model.Resource], @model.Manifest) -> Report
+
+pub fn validate_resources(Array[@model.Resource]) -> Report
+
+pub fn validate_spine(@model.Spine, @model.Manifest) -> Report
 
 // Errors
 
 // Types and methods
+pub struct ContainerEntry {
+  path : String
+  stored : Bool
+} derive(Eq, @debug.Debug)
+pub fn ContainerEntry::deflated(String) -> Self
+pub fn ContainerEntry::new(String, Bool) -> Self
+pub fn ContainerEntry::stored(String) -> Self
+
+pub struct Diagnostic {
+  severity : Severity
+  code : String
+  location : String
+  message : String
+} derive(Eq, @debug.Debug)
+pub fn Diagnostic::new(Severity, String, String, String) -> Self
+
+pub struct Report {
+  diagnostics : Array[Diagnostic]
+} derive(@debug.Debug)
+pub fn Report::add(Self, Severity, String, String, String) -> Unit
+pub fn Report::count_of(Self, Severity) -> Int
+pub fn Report::error(Self, String, String, String) -> Unit
+pub fn Report::error_count(Self) -> Int
+pub fn Report::has_errors(Self) -> Bool
+pub fn Report::info(Self, String, String, String) -> Unit
+pub fn Report::info_count(Self) -> Int
+pub fn Report::is_empty(Self) -> Bool
+pub fn Report::is_ok(Self) -> Bool
+pub fn Report::length(Self) -> Int
+pub fn Report::merge(Self, Self) -> Unit
+pub fn Report::new() -> Self
+pub fn Report::warning(Self, String, String, String) -> Unit
+pub fn Report::warning_count(Self) -> Int
+
+pub enum Severity {
+  Error
+  Warning
+  Info
+} derive(Eq, @debug.Debug)
+pub fn Severity::label(Self) -> String
 
 // Type aliases
 
