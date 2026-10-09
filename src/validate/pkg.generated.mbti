@@ -7,6 +7,10 @@ import {
 }
 
 // Values
+pub fn render_json(Report) -> String
+
+pub fn render_text(Report) -> String
+
 pub fn validate_book(@model.Book) -> Report
 
 pub fn validate_chapters(Array[@model.Chapter]) -> Report
@@ -57,6 +61,7 @@ pub fn Report::is_ok(Self) -> Bool
 pub fn Report::length(Self) -> Int
 pub fn Report::merge(Self, Self) -> Unit
 pub fn Report::new() -> Self
+pub fn Report::summary(Self) -> String
 pub fn Report::warning(Self, String, String, String) -> Unit
 pub fn Report::warning_count(Self) -> Int
 
