@@ -83,6 +83,20 @@ pub fn Meta::refining(property : String, refines : String) -> Meta {
 }
 
 ///|
+/// 构造带文本内容的 `property` 形态 `meta`，如
+/// `<meta property="schema:accessMode">textual</meta>`。
+pub fn Meta::of_property_content(property : String, content : String) -> Meta {
+  {
+    name: None,
+    content: Some(content),
+    property: Some(property),
+    refines: None,
+    scheme: None,
+    id: None,
+  }
+}
+
+///|
 /// 丛书 / 合集元数据，序列化为 `belongs-to-collection` 相关 `meta`。
 pub struct Series {
   name : String

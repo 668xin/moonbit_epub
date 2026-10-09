@@ -446,3 +446,129 @@ pub fn path_basename(path : String) -> String {
     None => path
   }
 }
+
+// ---------------------------------------------------------------------------
+// 可访问性元数据（S6，schema.org 词汇）
+// ---------------------------------------------------------------------------
+
+///|
+/// 可访问性元数据使用的保留前缀。
+///
+/// EPUB 3 将 `schema` 列为保留前缀，无需在 `package@prefix` 中声明。
+pub let prefix_schema : String = "schema:"
+
+///|
+/// 访问模式属性名（`schema:accessMode`）。
+pub let prop_access_mode : String = "schema:accessMode"
+
+///|
+/// 充分访问模式属性名（`schema:accessModeSufficient`）。
+pub let prop_access_mode_sufficient : String = "schema:accessModeSufficient"
+
+///|
+/// 可访问性特性属性名（`schema:accessibilityFeature`）。
+pub let prop_accessibility_feature : String = "schema:accessibilityFeature"
+
+///|
+/// 可访问性危害属性名（`schema:accessibilityHazard`）。
+pub let prop_accessibility_hazard : String = "schema:accessibilityHazard"
+
+///|
+/// 可访问性摘要属性名（`schema:accessibilitySummary`）。
+pub let prop_accessibility_summary : String = "schema:accessibilitySummary"
+
+///|
+/// 可访问性控制方式属性名（`schema:accessibilityControl`）。
+pub let prop_accessibility_control : String = "schema:accessibilityControl"
+
+///|
+/// 符合性声明属性名（`dcterms:conformsTo`）。
+pub let prop_conforms_to : String = "dcterms:conformsTo"
+
+///|
+/// 访问模式取值：视觉。
+pub let access_mode_visual : String = "visual"
+
+///|
+/// 访问模式取值：文本。
+pub let access_mode_textual : String = "textual"
+
+///|
+/// 访问模式取值：听觉。
+pub let access_mode_auditory : String = "auditory"
+
+///|
+/// 可访问性特性取值：图片替代文本。
+pub let feature_alternative_text : String = "alternativeText"
+
+///|
+/// 可访问性特性取值：长描述。
+pub let feature_long_description : String = "longDescription"
+
+///|
+/// 可访问性特性取值：阅读顺序明确。
+pub let feature_reading_order : String = "readingOrder"
+
+///|
+/// 可访问性特性取值：结构化导航。
+pub let feature_structural_navigation : String = "structuralNavigation"
+
+///|
+/// 可访问性特性取值：目录。
+pub let feature_table_of_contents : String = "tableOfContents"
+
+///|
+/// 可访问性特性取值：纸质页码。
+pub let feature_print_page_numbers : String = "printPageNumbers"
+
+///|
+/// 可访问性特性取值：MathML 数学公式。
+pub let feature_mathml : String = "MathML"
+
+///|
+/// 可访问性危害取值：无。
+pub let hazard_none : String = "none"
+
+///|
+/// 可访问性危害取值：闪烁。
+pub let hazard_flashing : String = "flashing"
+
+///|
+/// 可访问性危害取值：运动模拟。
+pub let hazard_motion : String = "motion"
+
+///|
+/// 可访问性危害取值：声音。
+pub let hazard_sound : String = "sound"
+
+///|
+/// 符合性声明默认文本：EPUB Accessibility 1.1 / WCAG 2.0 Level AA。
+pub let conforms_to_wcag_aa : String = "EPUB Accessibility 1.1 - WCAG 2.0 Level AA"
+
+// ---------------------------------------------------------------------------
+// Media Overlays（S6，SMIL）
+// ---------------------------------------------------------------------------
+
+///|
+/// SMIL 文档版本。
+pub let smil_version : String = "3.0"
+
+///|
+/// SMIL 文档媒体类型别名（等同 `mt_smil`）。
+pub let mt_smil_overlay : String = mt_smil
+
+///|
+/// `seq` 指向对应内容文档的属性名（`epub:textref`）。
+pub let epub_textref : String = "epub:textref"
+
+///|
+/// 语义类型属性名（`epub:type`）。
+pub let attr_epub_type : String = "epub:type"
+
+///|
+/// 音频起点属性名（`clipBegin`）。
+pub let attr_clip_begin : String = "clipBegin"
+
+///|
+/// 音频终点属性名（`clipEnd`）。
+pub let attr_clip_end : String = "clipEnd"

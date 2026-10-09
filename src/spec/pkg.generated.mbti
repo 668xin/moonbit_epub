@@ -2,7 +2,21 @@
 package "aoliaoxiaoxin/moon_epub/src/spec"
 
 // Values
+pub let access_mode_auditory : String
+
+pub let access_mode_textual : String
+
+pub let access_mode_visual : String
+
+pub let attr_clip_begin : String
+
+pub let attr_clip_end : String
+
+pub let attr_epub_type : String
+
 pub let attr_full_path : String
+
+pub let conforms_to_wcag_aa : String
 
 pub let dc_contributor : String
 
@@ -76,6 +90,8 @@ pub let elem_spine : String
 
 pub let epub_property_nav : String
 
+pub let epub_textref : String
+
 pub let epub_type_bodymatter : String
 
 pub let epub_type_landmarks : String
@@ -83,6 +99,28 @@ pub let epub_type_landmarks : String
 pub let epub_type_toc : String
 
 pub fn extension_of(String) -> String
+
+pub let feature_alternative_text : String
+
+pub let feature_long_description : String
+
+pub let feature_mathml : String
+
+pub let feature_print_page_numbers : String
+
+pub let feature_reading_order : String
+
+pub let feature_structural_navigation : String
+
+pub let feature_table_of_contents : String
+
+pub let hazard_flashing : String
+
+pub let hazard_motion : String
+
+pub let hazard_none : String
+
+pub let hazard_sound : String
 
 pub fn is_valid_id(String) -> Bool
 
@@ -119,6 +157,8 @@ pub let mt_otf : String
 pub let mt_png : String
 
 pub let mt_smil : String
+
+pub let mt_smil_overlay : String
 
 pub let mt_svg : String
 
@@ -196,9 +236,27 @@ pub let prefix_marc : String
 
 pub let prefix_opf : String
 
+pub let prefix_schema : String
+
+pub let prop_access_mode : String
+
+pub let prop_access_mode_sufficient : String
+
+pub let prop_accessibility_control : String
+
+pub let prop_accessibility_feature : String
+
+pub let prop_accessibility_hazard : String
+
+pub let prop_accessibility_summary : String
+
+pub let prop_conforms_to : String
+
 pub let property_modified : String
 
 pub let scheme_marc_relators : String
+
+pub let smil_version : String
 
 pub let urn_uuid_prefix : String
 

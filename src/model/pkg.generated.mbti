@@ -130,6 +130,7 @@ pub struct Meta {
 } derive(Eq, @debug.Debug)
 pub fn Meta::named(String, String) -> Self
 pub fn Meta::of_property(String) -> Self
+pub fn Meta::of_property_content(String, String) -> Self
 pub fn Meta::refining(String, String) -> Self
 
 pub struct Metadata {

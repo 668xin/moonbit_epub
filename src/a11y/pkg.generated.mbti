@@ -1,11 +1,39 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "aoliaoxiaoxin/moon_epub/src/a11y"
 
+import {
+  "aoliaoxiaoxin/moon_epub/src/model",
+  "moonbitlang/core/debug",
+}
+
 // Values
 
 // Errors
 
 // Types and methods
+pub struct Accessibility {
+  access_modes : Array[String]
+  access_mode_sufficient : Array[String]
+  features : Array[String]
+  hazards : Array[String]
+  controls : Array[String]
+  mut summary : String?
+  mut conforms_to : String?
+} derive(@debug.Debug)
+pub fn Accessibility::add_access_mode(Self, String) -> Unit
+pub fn Accessibility::add_access_mode_sufficient(Self, String) -> Unit
+pub fn Accessibility::add_control(Self, String) -> Unit
+pub fn Accessibility::add_feature(Self, String) -> Unit
+pub fn Accessibility::add_hazard(Self, String) -> Unit
+pub fn Accessibility::apply_to(Self, @model.Metadata) -> Unit
+pub fn Accessibility::audio_book() -> Self
+pub fn Accessibility::is_empty(Self) -> Bool
+pub fn Accessibility::meta_count(Self) -> Int
+pub fn Accessibility::new() -> Self
+pub fn Accessibility::set_conforms_to(Self, String) -> Unit
+pub fn Accessibility::set_summary(Self, String) -> Unit
+pub fn Accessibility::text_only() -> Self
+pub fn Accessibility::to_metas(Self) -> Array[@model.Meta]
 
 // Type aliases
 
