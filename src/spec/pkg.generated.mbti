@@ -2,6 +2,8 @@
 package "aoliaoxiaoxin/moon_epub/src/spec"
 
 // Values
+pub let attr_full_path : String
+
 pub let dc_contributor : String
 
 pub let dc_coverage : String
@@ -34,13 +36,23 @@ pub let dc_title : String
 
 pub let dc_type : String
 
+pub let default_content_dir : String
+
 pub let default_fonts_dir : String
 
 pub let default_images_dir : String
 
+pub let default_nav_filename : String
+
+pub let default_ncx_filename : String
+
+pub let default_package_filename : String
+
 pub let default_stylesheet_path : String
 
 pub let default_text_dir : String
+
+pub let elem_container : String
 
 pub let elem_guide : String
 
@@ -56,7 +68,13 @@ pub let elem_metadata : String
 
 pub let elem_package : String
 
+pub let elem_rootfile : String
+
+pub let elem_rootfiles : String
+
 pub let elem_spine : String
+
+pub let epub_property_nav : String
 
 pub let epub_type_bodymatter : String
 
@@ -67,6 +85,10 @@ pub let epub_type_toc : String
 pub fn extension_of(String) -> String
 
 pub fn is_valid_id(String) -> Bool
+
+pub let manifest_id_nav : String
+
+pub let manifest_id_ncx : String
 
 pub fn media_type_of_path(String) -> String
 
@@ -155,6 +177,8 @@ pub let ocf_mimetype : String
 pub let ocf_rights_path : String
 
 pub let ocf_signatures_path : String
+
+pub let ocf_version : String
 
 pub let package_version : String
 

@@ -491,9 +491,16 @@ fn write_guide(
 // ---------------------------------------------------------------------------
 
 ///|
-/// 渲染完整的 OPF 包文档。
-pub fn render_package(book : @model.Book, options : OpfOptions) -> String {
-  let metadata = book.metadata
+/// 由元数据、清单与阅读顺序渲染完整的 OPF 包文档。
+///
+/// 供上层打包（OCF）在自行装配出清单与阅读顺序后直接调用，
+/// 无需先构造 `Book`。
+pub fn render_package_from(
+  metadata : @model.Metadata,
+  manifest : @model.Manifest,
+  spine : @model.Spine,
+  options : OpfOptions,
+) -> String {
   let unique_id = match options.unique_identifier {
     Some(id) => id
     None => metadata.identifier_id
@@ -511,12 +518,18 @@ pub fn render_package(book : @model.Book, options : OpfOptions) -> String {
   }
   out.push('>')
   write_metadata(out, metadata, 1)
-  write_manifest(out, book.manifest, 1)
-  write_spine(out, book.spine, 1)
+  write_manifest(out, manifest, 1)
+  write_spine(out, spine, 1)
   if options.include_guide && options.guide.length() > 0 {
     write_guide(out, options.guide, 1)
   }
   write_indent(out, 0)
   out.push_iter("</package>".iter())
   String::from_array(out)
+}
+
+///|
+/// 渲染完整的 OPF 包文档。
+pub fn render_package(book : @model.Book, options : OpfOptions) -> String {
+  render_package_from(book.metadata, book.manifest, book.spine, options)
 }

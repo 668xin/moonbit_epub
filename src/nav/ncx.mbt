@@ -52,7 +52,7 @@ pub fn NcxOptions::set_include_play_order(
 
 ///|
 /// `navPoint` 深度优先序号计数器。
-struct NavCounter {
+priv struct NavCounter {
   mut next : Int
 }
 

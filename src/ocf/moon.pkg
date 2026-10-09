@@ -1,1 +1,14 @@
+import {
+  "aoliaoxiaoxin/moon_epub/src/spec",
+  "aoliaoxiaoxin/moon_epub/src/model",
+  "aoliaoxiaoxin/moon_epub/src/xhtml",
+  "aoliaoxiaoxin/moon_epub/src/opf",
+  "aoliaoxiaoxin/moon_epub/src/nav",
+  "aoliaoxiaoxin/moon_epub/src/zip",
+  "moonbitlang/core/debug",
+}
 
+// 与 model 包同因：公开类型上的 derive 会触发工具链
+// `implicit_impl_as_method` 过渡期告警，统一关闭以保持构建输出干净。
+
+warnings = "-implicit_impl_as_method"

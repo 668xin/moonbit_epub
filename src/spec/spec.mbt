@@ -183,6 +183,54 @@ pub let ocf_manifest_path : String = "META-INF/manifest.xml"
 pub let ocf_metadata_path : String = "META-INF/metadata.xml"
 
 ///|
+/// OCF 容器文档版本。
+pub let ocf_version : String = "1.0"
+
+///|
+/// 容器文档（`container.xml`）根元素名。
+pub let elem_container : String = "container"
+
+///|
+/// 容器文档根文件列表元素名。
+pub let elem_rootfiles : String = "rootfiles"
+
+///|
+/// 容器文档根文件元素名。
+pub let elem_rootfile : String = "rootfile"
+
+///|
+/// 根文件元素指向包文档的属性名。
+pub let attr_full_path : String = "full-path"
+
+///|
+/// 导航文档在清单中 `properties` 的语义值。
+pub let epub_property_nav : String = "nav"
+
+///|
+/// 内容文档与资源在容器内的默认根目录。
+pub let default_content_dir : String = "OEBPS"
+
+///|
+/// 包文档（OPF）默认文件名。
+pub let default_package_filename : String = "content.opf"
+
+///|
+/// 导航文档（nav.xhtml）默认文件名。
+pub let default_nav_filename : String = "nav.xhtml"
+
+///|
+/// EPUB 2 兼容导航（toc.ncx）默认文件名。
+pub let default_ncx_filename : String = "toc.ncx"
+
+///|
+/// 清单中导航文档条目的约定 ID。
+pub let manifest_id_nav : String = "nav"
+
+///|
+/// 清单中 NCX 条目的约定 ID，同时用于 `spine@toc`。
+pub let manifest_id_ncx : String = "ncx"
+
+///|
 /// 包文档根元素名。
 pub let elem_package : String = "package"
 

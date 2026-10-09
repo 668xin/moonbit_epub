@@ -1,11 +1,36 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "aoliaoxiaoxin/moon_epub/src/ocf"
 
+import {
+  "aoliaoxiaoxin/moon_epub/src/model",
+  "moonbitlang/core/debug",
+}
+
 // Values
+pub fn package_book(@model.Book, PackageOptions) -> Bytes
+
+pub fn render_container(String) -> String
 
 // Errors
 
 // Types and methods
+pub struct PackageOptions {
+  mut content_dir : String
+  mut package_filename : String
+  mut nav_filename : String
+  mut ncx_filename : String
+  mut language : String
+  mut use_descriptors : Bool
+  stylesheets : Array[String]
+} derive(@debug.Debug)
+pub fn PackageOptions::add_stylesheet(Self, String) -> Unit
+pub fn PackageOptions::new() -> Self
+pub fn PackageOptions::set_content_dir(Self, String) -> Unit
+pub fn PackageOptions::set_language(Self, String) -> Unit
+pub fn PackageOptions::set_nav_filename(Self, String) -> Unit
+pub fn PackageOptions::set_ncx_filename(Self, String) -> Unit
+pub fn PackageOptions::set_package_filename(Self, String) -> Unit
+pub fn PackageOptions::set_use_descriptors(Self, Bool) -> Unit
 
 // Type aliases
 

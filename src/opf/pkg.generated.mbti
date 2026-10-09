@@ -15,6 +15,8 @@ pub fn render_metadata(@model.Metadata, Int) -> String
 
 pub fn render_package(@model.Book, OpfOptions) -> String
 
+pub fn render_package_from(@model.Metadata, @model.Manifest, @model.Spine, OpfOptions) -> String
+
 pub fn render_spine(@model.Spine, Int) -> String
 
 // Errors
