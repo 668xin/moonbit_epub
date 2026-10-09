@@ -111,12 +111,14 @@ pub struct ManifestItem {
   href : String
   media_type : String
   properties : Array[String]
-  fallback : String?
-  media_overlay : String?
+  mut fallback : String?
+  mut media_overlay : String?
 } derive(Eq, @debug.Debug)
 pub fn ManifestItem::add_property(Self, String) -> Unit
 pub fn ManifestItem::has_property(Self, String) -> Bool
 pub fn ManifestItem::new(String, String, String) -> Self
+pub fn ManifestItem::set_fallback(Self, String) -> Unit
+pub fn ManifestItem::set_media_overlay(Self, String) -> Unit
 
 pub struct Meta {
   name : String?

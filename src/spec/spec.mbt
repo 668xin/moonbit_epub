@@ -39,6 +39,14 @@ pub let ns_xml : String = "http://www.w3.org/XML/1998/namespace"
 pub let ns_smil : String = "http://www.w3.org/ns/SMIL"
 
 ///|
+/// EPUB 2 兼容导航（`toc.ncx`）命名空间。
+pub let ns_ncx : String = "http://www.daisy.org/z3986/2005/ncx/"
+
+///|
+/// MARC 责任角色词表（`relators`）命名空间，用于元数据的 `role` 属性。
+pub let ns_marc_relators : String = "http://id.loc.gov/vocabulary/relators/"
+
+///|
 /// 常用命名空间前缀。
 pub let prefix_opf : String = "opf"
 
@@ -49,6 +57,10 @@ pub let prefix_dc : String = "dc"
 ///|
 /// 常用命名空间前缀。
 pub let prefix_epub : String = "epub"
+
+///|
+/// 常用命名空间前缀。
+pub let prefix_marc : String = "marc"
 
 ///|
 /// OCF 硬编码 MIME 类型：`.epub` 容器本身的类型，也是 `mimetype` 文件的内容。
@@ -205,6 +217,26 @@ pub let elem_meta : String = "meta"
 ///|
 /// OPF 包版本（EPUB 3.3 对应的包文档版本号）。
 pub let package_version : String = "3.0"
+
+///|
+/// NCX 文档版本（DAISY/Z39.86 2005-1）。
+pub let ncx_version : String = "2005-1"
+
+///|
+/// 元数据 `role` 属性的默认取值词表标识。
+pub let scheme_marc_relators : String = "marc:relators"
+
+///|
+/// 导航文档 `<nav>` 的目录语义值。
+pub let epub_type_toc : String = "toc"
+
+///|
+/// 导航文档 `<nav>` 的地标语义值。
+pub let epub_type_landmarks : String = "landmarks"
+
+///|
+/// 导航地标中「正文起点」的语义值。
+pub let epub_type_bodymatter : String = "bodymatter"
 
 ///|
 /// Dublin Core 元素名：标题。

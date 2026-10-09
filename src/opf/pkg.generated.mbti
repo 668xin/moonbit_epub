@@ -1,11 +1,43 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "aoliaoxiaoxin/moon_epub/src/opf"
 
+import {
+  "aoliaoxiaoxin/moon_epub/src/model",
+  "moonbitlang/core/debug",
+}
+
 // Values
+pub fn render_guide(Array[GuideReference], Int) -> String
+
+pub fn render_manifest(@model.Manifest, Int) -> String
+
+pub fn render_metadata(@model.Metadata, Int) -> String
+
+pub fn render_package(@model.Book, OpfOptions) -> String
+
+pub fn render_spine(@model.Spine, Int) -> String
 
 // Errors
 
 // Types and methods
+pub struct GuideReference {
+  ref_type : String
+  title : String
+  href : String
+} derive(Eq, @debug.Debug)
+pub fn GuideReference::new(String, String, String) -> Self
+
+pub struct OpfOptions {
+  mut version : String
+  mut unique_identifier : String?
+  mut include_guide : Bool
+  guide : Array[GuideReference]
+} derive(@debug.Debug)
+pub fn OpfOptions::add_guide(Self, GuideReference) -> Unit
+pub fn OpfOptions::new() -> Self
+pub fn OpfOptions::set_include_guide(Self, Bool) -> Unit
+pub fn OpfOptions::set_unique_identifier(Self, String) -> Unit
+pub fn OpfOptions::set_version(Self, String) -> Unit
 
 // Type aliases
 

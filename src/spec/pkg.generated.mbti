@@ -58,6 +58,12 @@ pub let elem_package : String
 
 pub let elem_spine : String
 
+pub let epub_type_bodymatter : String
+
+pub let epub_type_landmarks : String
+
+pub let epub_type_toc : String
+
 pub fn extension_of(String) -> String
 
 pub fn is_valid_id(String) -> Bool
@@ -108,6 +114,8 @@ pub let mt_xhtml : String
 
 pub let mt_xml : String
 
+pub let ncx_version : String
+
 pub fn normalize_id(String) -> String
 
 pub fn normalize_path(String) -> String
@@ -119,6 +127,10 @@ pub let ns_dc : String
 pub let ns_dcterms : String
 
 pub let ns_epub : String
+
+pub let ns_marc_relators : String
+
+pub let ns_ncx : String
 
 pub let ns_opf : String
 
@@ -156,9 +168,13 @@ pub let prefix_dc : String
 
 pub let prefix_epub : String
 
+pub let prefix_marc : String
+
 pub let prefix_opf : String
 
 pub let property_modified : String
+
+pub let scheme_marc_relators : String
 
 pub let urn_uuid_prefix : String
 

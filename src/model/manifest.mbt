@@ -14,8 +14,10 @@ pub struct ManifestItem {
   media_type : String
   // EPUB 3 `properties` 属性，如 `nav`、`cover-image`、`scripted`
   properties : Array[String]
-  fallback : String?
-  media_overlay : String?
+  // 回退条目 id，当前条目媒体类型不被支持时使用
+  mut fallback : String?
+  // 关联的 Media Overlays 文档 id
+  mut media_overlay : String?
 } derive(Eq, @debug.Debug)
 
 ///|
@@ -49,6 +51,24 @@ pub fn ManifestItem::has_property(
     }
   }
   false
+}
+
+///|
+/// 设置回退条目 id（当前条目媒体类型不被支持时使用）。
+pub fn ManifestItem::set_fallback(
+  self : ManifestItem,
+  fallback : String,
+) -> Unit {
+  self.fallback = Some(fallback)
+}
+
+///|
+/// 关联 Media Overlays 文档的清单 id。
+pub fn ManifestItem::set_media_overlay(
+  self : ManifestItem,
+  media_overlay : String,
+) -> Unit {
+  self.media_overlay = Some(media_overlay)
 }
 
 ///|
