@@ -7,7 +7,6 @@ Moonbit_EPUB —— 用 MoonBit 实现的 **EPUB 3 电子书生成引擎**。
 XHTML5 内容文档、样式与资源管理、Media Overlays 朗读同步、OCF/ZIP 容器打包，
 以及一个可独立运行的**结构校验器**。
 
-- 仓库（Gitee）：<https://gitee.com/aoliaoxiaoxin/moonbit_epub.git>
 - 仓库（GitHub）：<https://github.com/668xin/moonbit_epub.git>
 
 ## 特性
@@ -79,22 +78,22 @@ if report.is_ok() {
 生成端的分层 API（均为 `pub`，`moon info` 生成的 `src/*/pkg.generated.mbti`
 列出了完整接口）：
 
-| 包 | 职责 |
-| --- | --- |
-| `spec` | 规范常量：XML 命名空间、媒体类型、OCF 保留文件名、可访问性/SMIL 常量 |
-| `model` | 书籍领域模型：`Book` / `Chapter` / `Resource` / `Metadata` / `Manifest` / `Spine` |
-| `xhtml` | XHTML5 内容文档生成（块级与内联元素、脚注编号） |
-| `opf` | OPF 包文档序列化（元数据、manifest、spine） |
-| `nav` | `nav.xhtml` 导航与 `toc.ncx` 向后兼容目录 |
-| `zip` | ZIP 写入器：本地文件头、中央目录、CRC32、DEFLATE |
-| `ocf` | OCF 容器布局与端到端打包（`package_book`） |
-| `assets` | 样式表合成、MIME 类型推断、资源注册 |
-| `cfi` | EPUB CFI 定位路径构造与解析 |
-| `a11y` | 可访问性元数据体系 |
-| `media` | Media Overlays / SMIL 朗读同步 |
-| `validate` | 结构校验规则集与诊断报告 |
-| `examples` | 三个可直接打包的示例书籍（`minimal` / `multi-chapter` / `styled`） |
-| `cli` | 命令行入口 |
+| 包         | 职责                                                                              |
+| ---------- | --------------------------------------------------------------------------------- |
+| `spec`     | 规范常量：XML 命名空间、媒体类型、OCF 保留文件名、可访问性/SMIL 常量              |
+| `model`    | 书籍领域模型：`Book` / `Chapter` / `Resource` / `Metadata` / `Manifest` / `Spine` |
+| `xhtml`    | XHTML5 内容文档生成（块级与内联元素、脚注编号）                                   |
+| `opf`      | OPF 包文档序列化（元数据、manifest、spine）                                       |
+| `nav`      | `nav.xhtml` 导航与 `toc.ncx` 向后兼容目录                                         |
+| `zip`      | ZIP 写入器：本地文件头、中央目录、CRC32、DEFLATE                                  |
+| `ocf`      | OCF 容器布局与端到端打包（`package_book`）                                        |
+| `assets`   | 样式表合成、MIME 类型推断、资源注册                                               |
+| `cfi`      | EPUB CFI 定位路径构造与解析                                                       |
+| `a11y`     | 可访问性元数据体系                                                                |
+| `media`    | Media Overlays / SMIL 朗读同步                                                    |
+| `validate` | 结构校验规则集与诊断报告                                                          |
+| `examples` | 三个可直接打包的示例书籍（`minimal` / `multi-chapter` / `styled`）                |
+| `cli`      | 命令行入口                                                                        |
 
 ## 内置示例
 
