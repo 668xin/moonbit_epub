@@ -1,1 +1,9 @@
+import {
+  "aoliaoxiaoxin/moon_epub/src/spec",
+  "moonbitlang/core/debug",
+}
 
+// 与 model 包同因：公开类型上的 derive 会触发工具链
+// `implicit_impl_as_method` 过渡期告警，统一关闭以保持构建输出干净。
+
+warnings = "-implicit_impl_as_method"

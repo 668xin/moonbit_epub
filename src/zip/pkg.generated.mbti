@@ -1,11 +1,36 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "aoliaoxiaoxin/moon_epub/src/zip"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
+pub fn crc32(Bytes) -> UInt
+
+pub fn deflate(Bytes) -> Bytes
 
 // Errors
 
 // Types and methods
+type ZipEntry derive(@debug.Debug)
+
+pub enum ZipMethod {
+  Stored
+  Deflated
+} derive(Eq, @debug.Debug)
+
+pub struct ZipWriter {
+  entries : Array[ZipEntry]
+  mut use_descriptors : Bool
+} derive(@debug.Debug)
+pub fn ZipWriter::add(Self, String, Bytes, ZipMethod) -> Unit
+pub fn ZipWriter::add_deflated(Self, String, Bytes) -> Unit
+pub fn ZipWriter::add_stored(Self, String, Bytes) -> Unit
+pub fn ZipWriter::entry_count(Self) -> Int
+pub fn ZipWriter::finish(Self) -> Bytes
+pub fn ZipWriter::new() -> Self
+pub fn ZipWriter::set_use_descriptors(Self, Bool) -> Unit
 
 // Type aliases
 
