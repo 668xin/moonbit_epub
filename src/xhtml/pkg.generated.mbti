@@ -19,12 +19,23 @@ pub fn render_inlines(Array[@model.Inline]) -> String
 // Errors
 
 // Types and methods
+pub struct NoteIndex {
+  order : Array[String]
+}
+pub fn NoteIndex::empty() -> Self
+pub fn NoteIndex::from_blocks(Array[@model.Block]) -> Self
+pub fn NoteIndex::from_inlines(Array[@model.Inline]) -> Self
+pub fn NoteIndex::length(Self) -> Int
+pub fn NoteIndex::number_of(Self, String) -> Int?
+
 pub struct XhtmlOptions {
   mut language : String
   stylesheets : Array[String]
+  mut body_type : String?
 }
 pub fn XhtmlOptions::add_stylesheet(Self, String) -> Unit
 pub fn XhtmlOptions::new(language? : String) -> Self
+pub fn XhtmlOptions::set_body_type(Self, String) -> Unit
 pub fn XhtmlOptions::set_language(Self, String) -> Unit
 
 // Type aliases

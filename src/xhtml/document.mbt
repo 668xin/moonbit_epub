@@ -12,12 +12,14 @@ pub struct XhtmlOptions {
   mut language : String
   // 应用于 `<head>` 的样式表 href 列表（相对当前内容文档路径）
   stylesheets : Array[String]
+  // `<body>` 上的 EPUB 3 语义（如 `"bodymatter"`），可选
+  mut body_type : String?
 }
 
 ///|
 /// 构造渲染选项，语言缺省为 `"en"`。
 pub fn XhtmlOptions::new(language? : String) -> XhtmlOptions {
-  { language: language.unwrap_or("en"), stylesheets: [], }
+  { language: language.unwrap_or("en"), stylesheets: [], body_type: None, }
 }
 
 ///|
@@ -35,6 +37,15 @@ pub fn XhtmlOptions::add_stylesheet(self : XhtmlOptions, href : String) -> Unit 
   self.stylesheets.push(href)
 }
 
+///|
+/// 设置 `<body>` 的 EPUB 3 语义属性值。
+pub fn XhtmlOptions::set_body_type(
+  self : XhtmlOptions,
+  body_type : String,
+) -> Unit {
+  self.body_type = Some(body_type)
+}
+
 // ---------------------------------------------------------------------------
 // 内联元素渲染
 // ---------------------------------------------------------------------------
@@ -43,39 +54,47 @@ pub fn XhtmlOptions::add_stylesheet(self : XhtmlOptions, href : String) -> Unit 
 /// 渲染单个内联元素为 XHTML 片段。
 pub fn render_inline(inline : @model.Inline) -> String {
   let out : Array[Char] = []
-  write_inline(out, inline)
+  write_inline(out, inline, NoteIndex::from_inlines([inline]))
   String::from_array(out)
 }
 
 ///|
-/// 渲染内联序列为 XHTML 片段。
+/// 渲染内联序列为 XHTML 片段，脚注引用按出现顺序编号。
 pub fn render_inlines(inlines : Array[@model.Inline]) -> String {
   let out : Array[Char] = []
-  write_inlines(out, inlines)
+  write_inlines(out, inlines, NoteIndex::from_inlines(inlines))
   String::from_array(out)
 }
 
 ///|
 /// 把内联序列写入字符缓冲。
-fn write_inlines(out : Array[Char], inlines : Array[@model.Inline]) -> Unit {
+fn write_inlines(
+  out : Array[Char],
+  inlines : Array[@model.Inline],
+  notes : NoteIndex,
+) -> Unit {
   for inline in inlines {
-    write_inline(out, inline)
+    write_inline(out, inline, notes)
   }
 }
 
 ///|
 /// 渲染单个内联元素到字符缓冲。
-fn write_inline(out : Array[Char], inline : @model.Inline) -> Unit {
+fn write_inline(
+  out : Array[Char],
+  inline : @model.Inline,
+  notes : NoteIndex,
+) -> Unit {
   match inline {
     Text(s) => out.push_iter(@spec.xml_escape(s).iter())
     Emphasis(children) => {
       out.push_iter("<em>".iter())
-      write_inlines(out, children)
+      write_inlines(out, children, notes)
       out.push_iter("</em>".iter())
     }
     Strong(children) => {
       out.push_iter("<strong>".iter())
-      write_inlines(out, children)
+      write_inlines(out, children, notes)
       out.push_iter("</strong>".iter())
     }
     Code(s) => {
@@ -87,10 +106,10 @@ fn write_inline(out : Array[Char], inline : @model.Inline) -> Unit {
       out.push_iter("<a href=\"".iter())
       out.push_iter(@spec.xml_escape_attr(href).iter())
       out.push_iter("\">".iter())
-      write_inlines(out, children)
+      write_inlines(out, children, notes)
       out.push_iter("</a>".iter())
     }
-    FootnoteRef(id~) => write_footnote_ref(out, id)
+    FootnoteRef(id~) => write_footnote_ref(out, id, notes)
   }
 }
 
@@ -102,7 +121,7 @@ fn write_inline(out : Array[Char], inline : @model.Inline) -> Unit {
 /// 渲染单个块级元素为 XHTML 片段（无自身前导缩进）。
 pub fn render_block(block : @model.Block) -> String {
   let out : Array[Char] = []
-  write_block(out, block, 0)
+  write_block(out, block, 0, NoteIndex::from_blocks([block]))
   String::from_array(out)
 }
 
@@ -110,11 +129,12 @@ pub fn render_block(block : @model.Block) -> String {
 /// 渲染块序列为 XHTML 片段，块之间以换行分隔。
 pub fn render_blocks(blocks : Array[@model.Block]) -> String {
   let out : Array[Char] = []
+  let notes = NoteIndex::from_blocks(blocks)
   for i, block in blocks {
     if i > 0 {
       write_indent(out, 0)
     }
-    write_block(out, block, 0)
+    write_block(out, block, 0, notes)
   }
   String::from_array(out)
 }
@@ -125,40 +145,46 @@ fn write_blocks(
   out : Array[Char],
   blocks : Array[@model.Block],
   depth : Int,
+  notes : NoteIndex,
 ) -> Unit {
   for block in blocks {
     write_indent(out, depth)
-    write_block(out, block, depth)
+    write_block(out, block, depth, notes)
   }
 }
 
 ///|
 /// 渲染单个块级元素（不含自身前导缩进）。
-fn write_block(out : Array[Char], block : @model.Block, depth : Int) -> Unit {
+fn write_block(
+  out : Array[Char],
+  block : @model.Block,
+  depth : Int,
+  notes : NoteIndex,
+) -> Unit {
   match block {
     Paragraph(inlines) => {
       out.push_iter("<p>".iter())
-      write_inlines(out, inlines)
+      write_inlines(out, inlines, notes)
       out.push_iter("</p>".iter())
     }
     Heading(level~, children~) => {
       let level = clamp_heading(level)
       out.push_iter("<h\{level}>".iter())
-      write_inlines(out, children)
+      write_inlines(out, children, notes)
       out.push_iter("</h\{level}>".iter())
     }
-    List(ordered~, items~) => write_list(out, ordered, items, depth)
+    List(ordered~, items~) => write_list(out, ordered, items, depth, notes)
     Blockquote(blocks) => {
       out.push_iter("<blockquote>".iter())
-      write_blocks(out, blocks, depth + 1)
+      write_blocks(out, blocks, depth + 1, notes)
       write_indent(out, depth)
       out.push_iter("</blockquote>".iter())
     }
     CodeBlock(language~, code~) => write_code_block(out, language, code)
     Image(src~, alt~) => write_image(out, src, alt)
-    Table(header~, rows~) => write_table(out, header, rows, depth)
+    Table(header~, rows~) => write_table(out, header, rows, depth, notes)
     HorizontalRule => out.push_iter("<hr/>".iter())
-    Note(id~, blocks~) => write_note(out, id, blocks, depth)
+    Note(id~, blocks~) => write_note(out, id, blocks, depth, notes)
   }
 }
 
@@ -191,6 +217,7 @@ fn write_list(
   ordered : Bool,
   items : Array[Array[@model.Block]],
   depth : Int,
+  notes : NoteIndex,
 ) -> Unit {
   let tag = if ordered { "ol" } else { "ul" }
   out.push_iter("<\{tag}>".iter())
@@ -199,13 +226,13 @@ fn write_list(
       Some(inlines) => {
         write_indent(out, depth + 1)
         out.push_iter("<li>".iter())
-        write_inlines(out, inlines)
+        write_inlines(out, inlines, notes)
         out.push_iter("</li>".iter())
       }
       None => {
         write_indent(out, depth + 1)
         out.push_iter("<li>".iter())
-        write_blocks(out, item, depth + 2)
+        write_blocks(out, item, depth + 2, notes)
         write_indent(out, depth + 1)
         out.push_iter("</li>".iter())
       }
@@ -264,13 +291,14 @@ fn write_table(
   header : Array[Array[@model.Inline]],
   rows : Array[Array[Array[@model.Inline]]],
   depth : Int,
+  notes : NoteIndex,
 ) -> Unit {
   out.push_iter("<table>".iter())
   if header.length() > 0 {
     write_indent(out, depth + 1)
     out.push_iter("<thead>".iter())
     write_indent(out, depth + 2)
-    write_cells(out, header, "th")
+    write_cells(out, header, "th", notes)
     write_indent(out, depth + 1)
     out.push_iter("</thead>".iter())
   }
@@ -279,7 +307,7 @@ fn write_table(
     out.push_iter("<tbody>".iter())
     for row in rows {
       write_indent(out, depth + 2)
-      write_cells(out, row, "td")
+      write_cells(out, row, "td", notes)
     }
     write_indent(out, depth + 1)
     out.push_iter("</tbody>".iter())
@@ -294,46 +322,20 @@ fn write_cells(
   out : Array[Char],
   cells : Array[Array[@model.Inline]],
   tag : String,
+  notes : NoteIndex,
 ) -> Unit {
   out.push_iter("<tr>".iter())
   for cell in cells {
     out.push_iter("<\{tag}>".iter())
-    write_inlines(out, cell)
+    write_inlines(out, cell, notes)
     out.push_iter("</\{tag}>".iter())
   }
   out.push_iter("</tr>".iter())
 }
 
 // ---------------------------------------------------------------------------
-// 脚注与文档骨架
+// 文档骨架
 // ---------------------------------------------------------------------------
-
-///|
-/// 渲染脚注引用为指向脚注正文的链接。
-fn write_footnote_ref(out : Array[Char], id : String) -> Unit {
-  let attr = @spec.xml_escape_attr(id)
-  out.push_iter("<a href=\"#".iter())
-  out.push_iter(attr.iter())
-  out.push_iter("\" class=\"footnote-ref\">".iter())
-  out.push_iter(@spec.xml_escape(id).iter())
-  out.push_iter("</a>".iter())
-}
-
-///|
-/// 渲染脚注/尾注正文容器。
-fn write_note(
-  out : Array[Char],
-  id : String,
-  blocks : Array[@model.Block],
-  depth : Int,
-) -> Unit {
-  out.push_iter("<aside id=\"".iter())
-  out.push_iter(@spec.xml_escape_attr(id).iter())
-  out.push_iter("\">".iter())
-  write_blocks(out, blocks, depth + 1)
-  write_indent(out, depth)
-  out.push_iter("</aside>".iter())
-}
 
 ///|
 /// 渲染章节为完整的 XHTML5 内容文档。
@@ -372,8 +374,17 @@ pub fn render_document(
   out.push_iter("</head>".iter())
   // <body>
   write_indent(out, 1)
-  out.push_iter("<body>".iter())
-  write_blocks(out, chapter.body, 2)
+  out.push_iter("<body".iter())
+  match options.body_type {
+    Some(body_type) => {
+      out.push_iter(" epub:type=\"".iter())
+      out.push_iter(@spec.xml_escape_attr(body_type).iter())
+      out.push_iter("\"".iter())
+    }
+    None => ()
+  }
+  out.push_iter(">".iter())
+  write_blocks(out, chapter.body, 2, NoteIndex::from_blocks(chapter.body))
   write_indent(out, 1)
   out.push_iter("</body>".iter())
   write_indent(out, 0)

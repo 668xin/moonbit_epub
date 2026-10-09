@@ -127,3 +127,54 @@ test "render_document: 默认语言与空正文" {
   assert_true(doc.contains("<body>\n  </body>"))
   assert_true(doc.has_suffix("</html>"))
 }
+
+///|
+test "NoteIndex: 按出现顺序编号且去重" {
+  let index = NoteIndex::from_inlines([
+    @model.Inline::footnote_ref("n2"),
+    @model.Inline::footnote_ref("n1"),
+    @model.Inline::footnote_ref("n2"),
+  ])
+  assert_eq(index.length(), 2)
+  assert_eq(index.number_of("n2"), Some(1))
+  assert_eq(index.number_of("n1"), Some(2))
+  assert_eq(index.number_of("n3"), None)
+}
+
+///|
+test "render_inlines: 脚注引用带编号与 epub:type 语义" {
+  let rendered = render_inlines([
+    @model.Inline::footnote_ref("n1"),
+    @model.Inline::text("，"),
+    @model.Inline::footnote_ref("n2"),
+  ])
+  assert_true(
+    rendered.contains(
+      "<a href=\"#n1\" id=\"ref-n1\" class=\"footnote-ref\" epub:type=\"noteref\" role=\"doc-noteref\"><sup>1</sup></a>",
+    ),
+  )
+  assert_true(rendered.contains("<sup>2</sup>"))
+}
+
+///|
+test "render_block: 脚注正文为语义化 aside" {
+  let note = @model.Block::note("n1", [@model.Block::paragraph("注文")])
+  assert_eq(
+    render_block(note),
+    "<aside id=\"n1\" epub:type=\"footnote\" role=\"doc-footnote\">\n" +
+    "  <p>注文</p>\n</aside>",
+  )
+}
+
+///|
+test "render_document: body 语义与正文脚注" {
+  let chapter = @model.Chapter::with_body("c", "T", [
+    @model.Block::note("n1", [@model.Block::paragraph("注")]),
+  ])
+  let options = XhtmlOptions::new(language="zh")
+  options.set_body_type("bodymatter")
+  let doc = render_document(chapter, options)
+  assert_true(doc.contains("<body epub:type=\"bodymatter\">"))
+  assert_true(doc.contains("epub:type=\"footnote\""))
+  assert_true(doc.contains("role=\"doc-footnote\""))
+}
