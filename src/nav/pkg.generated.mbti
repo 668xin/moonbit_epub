@@ -1,11 +1,57 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "aoliaoxiaoxin/moon_epub/src/nav"
 
+import {
+  "aoliaoxiaoxin/moon_epub/src/model",
+  "moonbitlang/core/debug",
+}
+
 // Values
+pub fn render_nav(@model.Book, NavOptions) -> String
+
+pub fn render_nav_list(Array[@model.Chapter], Int) -> String
+
+pub fn render_nav_map(Array[@model.Chapter], Bool) -> String
+
+pub fn render_ncx(@model.Book, NcxOptions) -> String
 
 // Errors
 
 // Types and methods
+pub struct Landmark {
+  ref_type : String
+  href : String
+  title : String
+} derive(Eq, @debug.Debug)
+pub fn Landmark::new(String, String, String) -> Self
+
+type NavCounter
+
+pub struct NavOptions {
+  mut language : String
+  mut title : String
+  mut nav_id : String
+  mut include_landmarks : Bool
+  landmarks : Array[Landmark]
+} derive(@debug.Debug)
+pub fn NavOptions::add_landmark(Self, Landmark) -> Unit
+pub fn NavOptions::new() -> Self
+pub fn NavOptions::set_include_landmarks(Self, Bool) -> Unit
+pub fn NavOptions::set_language(Self, String) -> Unit
+pub fn NavOptions::set_nav_id(Self, String) -> Unit
+pub fn NavOptions::set_title(Self, String) -> Unit
+
+pub struct NcxOptions {
+  mut language : String
+  mut uid : String?
+  mut title : String?
+  mut include_play_order : Bool
+} derive(@debug.Debug)
+pub fn NcxOptions::new() -> Self
+pub fn NcxOptions::set_include_play_order(Self, Bool) -> Unit
+pub fn NcxOptions::set_language(Self, String) -> Unit
+pub fn NcxOptions::set_title(Self, String) -> Unit
+pub fn NcxOptions::set_uid(Self, String) -> Unit
 
 // Type aliases
 
