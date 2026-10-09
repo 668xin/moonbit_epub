@@ -1,1 +1,11 @@
+import {
+  "aoliaoxiaoxin/moon_epub/src/spec",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/encoding/utf8",
+}
 
+// 公开类型上的 `derive(Eq, @debug.Debug)` 会触发工具链的
+// `implicit_impl_as_method` 过渡期告警（MoonBit 正在废弃隐式方法提升），
+// 与本项目代码无关，统一关闭以保持构建输出干净。
+
+warnings = "-implicit_impl_as_method"

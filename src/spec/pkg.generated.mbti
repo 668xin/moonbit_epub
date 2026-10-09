@@ -1,0 +1,177 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "aoliaoxiaoxin/moon_epub/src/spec"
+
+// Values
+pub let dc_contributor : String
+
+pub let dc_coverage : String
+
+pub let dc_creator : String
+
+pub let dc_date : String
+
+pub let dc_description : String
+
+pub let dc_elements : Array[String]
+
+pub let dc_format : String
+
+pub let dc_identifier : String
+
+pub let dc_language : String
+
+pub let dc_publisher : String
+
+pub let dc_relation : String
+
+pub let dc_rights : String
+
+pub let dc_source : String
+
+pub let dc_subject : String
+
+pub let dc_title : String
+
+pub let dc_type : String
+
+pub let default_fonts_dir : String
+
+pub let default_images_dir : String
+
+pub let default_stylesheet_path : String
+
+pub let default_text_dir : String
+
+pub let elem_guide : String
+
+pub let elem_item : String
+
+pub let elem_itemref : String
+
+pub let elem_manifest : String
+
+pub let elem_meta : String
+
+pub let elem_metadata : String
+
+pub let elem_package : String
+
+pub let elem_spine : String
+
+pub fn extension_of(String) -> String
+
+pub fn is_valid_id(String) -> Bool
+
+pub fn media_type_of_path(String) -> String
+
+pub let mt_css : String
+
+pub let mt_epub : String
+
+pub let mt_gif : String
+
+pub let mt_jpeg : String
+
+pub let mt_js : String
+
+pub let mt_mp3 : String
+
+pub let mt_mp4 : String
+
+pub let mt_ncx : String
+
+pub let mt_octet_stream : String
+
+pub let mt_ogg : String
+
+pub let mt_opf : String
+
+pub let mt_otf : String
+
+pub let mt_png : String
+
+pub let mt_smil : String
+
+pub let mt_svg : String
+
+pub let mt_ttf : String
+
+pub let mt_txt : String
+
+pub let mt_webp : String
+
+pub let mt_woff : String
+
+pub let mt_woff2 : String
+
+pub let mt_xhtml : String
+
+pub let mt_xml : String
+
+pub fn normalize_id(String) -> String
+
+pub fn normalize_path(String) -> String
+
+pub let ns_container : String
+
+pub let ns_dc : String
+
+pub let ns_dcterms : String
+
+pub let ns_epub : String
+
+pub let ns_opf : String
+
+pub let ns_smil : String
+
+pub let ns_xhtml : String
+
+pub let ns_xml : String
+
+pub let ocf_container_path : String
+
+pub let ocf_encryption_path : String
+
+pub let ocf_manifest_path : String
+
+pub let ocf_meta_inf_dir : String
+
+pub let ocf_metadata_path : String
+
+pub let ocf_mimetype : String
+
+pub let ocf_rights_path : String
+
+pub let ocf_signatures_path : String
+
+pub let package_version : String
+
+pub fn path_basename(String) -> String
+
+pub fn path_dirname(String) -> String
+
+pub fn path_join(String, String) -> String
+
+pub let prefix_dc : String
+
+pub let prefix_epub : String
+
+pub let prefix_opf : String
+
+pub let property_modified : String
+
+pub let urn_uuid_prefix : String
+
+pub fn utf8_len(String) -> Int
+
+pub fn xml_escape(String) -> String
+
+pub fn xml_escape_attr(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

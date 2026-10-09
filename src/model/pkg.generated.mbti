@@ -1,0 +1,204 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "aoliaoxiaoxin/moon_epub/src/model"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn chapter_depth(Array[Chapter]) -> Int
+
+pub fn chapter_href(Chapter) -> String
+
+pub fn count_chapters(Array[Chapter]) -> Int
+
+pub fn find_chapter(Array[Chapter], String) -> Chapter?
+
+pub fn flatten_chapters(Array[Chapter]) -> Array[Chapter]
+
+pub fn plain_text(Array[Inline]) -> String
+
+pub fn resource_id(Resource) -> String
+
+pub fn walk_chapters(Array[Chapter], (Int, Chapter) -> Unit) -> Unit
+
+// Errors
+
+// Types and methods
+pub enum Block {
+  Paragraph(Array[Inline])
+  Heading(level~ : Int, children~ : Array[Inline])
+  List(ordered~ : Bool, items~ : Array[Array[Block]])
+  Blockquote(Array[Block])
+  CodeBlock(language~ : String, code~ : String)
+  Image(src~ : String, alt~ : String)
+  Table(header~ : Array[Array[Inline]], rows~ : Array[Array[Array[Inline]]])
+  HorizontalRule
+  Note(id~ : String, blocks~ : Array[Block])
+} derive(Eq, @debug.Debug)
+pub fn Block::blockquote(Array[Self]) -> Self
+pub fn Block::code_block(String, String) -> Self
+pub fn Block::heading(Int, String) -> Self
+pub fn Block::horizontal_rule() -> Self
+pub fn Block::image(String, String) -> Self
+pub fn Block::list(Bool, Array[Array[Self]]) -> Self
+pub fn Block::note(String, Array[Self]) -> Self
+pub fn Block::paragraph(String) -> Self
+pub fn Block::table(Array[Array[Inline]], Array[Array[Array[Inline]]]) -> Self
+
+pub struct Book {
+  metadata : Metadata
+  chapters : Array[Chapter]
+  resources : Array[Resource]
+  manifest : Manifest
+  spine : Spine
+} derive(@debug.Debug)
+pub fn Book::add_chapter(Self, Chapter) -> Unit
+pub fn Book::add_manifest_item(Self, ManifestItem) -> Bool
+pub fn Book::add_resource(Self, Resource) -> Unit
+pub fn Book::add_spine_item(Self, SpineItem) -> Unit
+pub fn Book::chapter_count(Self) -> Int
+pub fn Book::find_chapter(Self, String) -> Chapter?
+pub fn Book::has_unique_chapter_ids(Self) -> Bool
+pub fn Book::new(Metadata) -> Self
+
+pub struct Chapter {
+  id : String
+  title : String
+  body : Array[Block]
+  children : Array[Chapter]
+} derive(@debug.Debug)
+pub fn Chapter::add_child(Self, Self) -> Unit
+pub fn Chapter::new(String, String) -> Self
+pub fn Chapter::with_body(String, String, Array[Block]) -> Self
+
+pub struct Contributor {
+  name : String
+  role : String?
+  file_as : String?
+} derive(Eq, @debug.Debug)
+pub fn Contributor::new(String, role? : String, file_as? : String) -> Self
+
+pub enum Inline {
+  Text(String)
+  Emphasis(Array[Inline])
+  Strong(Array[Inline])
+  Code(String)
+  Link(href~ : String, children~ : Array[Inline])
+  FootnoteRef(id~ : String)
+} derive(Eq, @debug.Debug)
+pub fn Inline::code(String) -> Self
+pub fn Inline::emphasis(Array[Self]) -> Self
+pub fn Inline::footnote_ref(String) -> Self
+pub fn Inline::link(String, Array[Self]) -> Self
+pub fn Inline::strong(Array[Self]) -> Self
+pub fn Inline::text(String) -> Self
+
+pub struct Manifest {
+  items : Array[ManifestItem]
+  // private fields
+} derive(@debug.Debug)
+pub fn Manifest::add(Self, ManifestItem) -> Bool
+pub fn Manifest::find_by_href(Self, String) -> ManifestItem?
+pub fn Manifest::find_by_id(Self, String) -> ManifestItem?
+pub fn Manifest::has_href(Self, String) -> Bool
+pub fn Manifest::has_id(Self, String) -> Bool
+pub fn Manifest::length(Self) -> Int
+pub fn Manifest::new() -> Self
+
+pub struct ManifestItem {
+  id : String
+  href : String
+  media_type : String
+  properties : Array[String]
+  fallback : String?
+  media_overlay : String?
+} derive(Eq, @debug.Debug)
+pub fn ManifestItem::add_property(Self, String) -> Unit
+pub fn ManifestItem::has_property(Self, String) -> Bool
+pub fn ManifestItem::new(String, String, String) -> Self
+
+pub struct Meta {
+  name : String?
+  content : String?
+  property : String?
+  refines : String?
+  scheme : String?
+  id : String?
+} derive(Eq, @debug.Debug)
+pub fn Meta::named(String, String) -> Self
+pub fn Meta::of_property(String) -> Self
+pub fn Meta::refining(String, String) -> Self
+
+pub struct Metadata {
+  mut title : String
+  mut language : String
+  mut identifier : String
+  mut identifier_id : String
+  creators : Array[Contributor]
+  contributors : Array[Contributor]
+  publishers : Array[String]
+  dates : Array[String]
+  subjects : Array[String]
+  descriptions : Array[String]
+  mut rights : String?
+  mut modified : String?
+  metas : Array[Meta]
+  series : Array[Series]
+} derive(@debug.Debug)
+pub fn Metadata::add_contributor(Self, Contributor) -> Unit
+pub fn Metadata::add_creator(Self, Contributor) -> Unit
+pub fn Metadata::add_date(Self, String) -> Unit
+pub fn Metadata::add_description(Self, String) -> Unit
+pub fn Metadata::add_meta(Self, Meta) -> Unit
+pub fn Metadata::add_publisher(Self, String) -> Unit
+pub fn Metadata::add_series(Self, Series) -> Unit
+pub fn Metadata::add_subject(Self, String) -> Unit
+pub fn Metadata::creator_names(Self) -> Array[String]
+pub fn Metadata::is_complete(Self) -> Bool
+pub fn Metadata::new(String, String, String) -> Self
+pub fn Metadata::set_identifier(Self, String) -> Unit
+pub fn Metadata::set_identifier_id(Self, String) -> Unit
+pub fn Metadata::set_language(Self, String) -> Unit
+pub fn Metadata::set_modified(Self, String) -> Unit
+pub fn Metadata::set_rights(Self, String) -> Unit
+pub fn Metadata::set_title(Self, String) -> Unit
+
+pub struct Resource {
+  href : String
+  media_type : String
+  data : Bytes
+  properties : Array[String]
+} derive(@debug.Debug)
+pub fn Resource::css(String, String) -> Self
+pub fn Resource::new(String, String, Bytes) -> Self
+pub fn Resource::text(String, String, String) -> Self
+
+pub struct Series {
+  name : String
+  index : Int?
+} derive(Eq, @debug.Debug)
+pub fn Series::new(String, index? : Int) -> Self
+
+pub struct Spine {
+  items : Array[SpineItem]
+  mut toc : String?
+  page_progression_direction : String?
+} derive(Eq, @debug.Debug)
+pub fn Spine::add(Self, SpineItem) -> Unit
+pub fn Spine::contains(Self, String) -> Bool
+pub fn Spine::idrefs(Self) -> Array[String]
+pub fn Spine::new() -> Self
+pub fn Spine::set_toc(Self, String) -> Unit
+
+pub struct SpineItem {
+  idref : String
+  linear : Bool
+  properties : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn SpineItem::new(String) -> Self
+pub fn SpineItem::non_linear(String) -> Self
+
+// Type aliases
+
+// Traits
