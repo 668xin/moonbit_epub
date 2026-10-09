@@ -104,3 +104,104 @@ test "render_smil: 空覆盖文档" {
   assert_true(smil.contains("</body>"))
   assert_false(smil.contains("<seq"))
 }
+
+///|
+test "format_clock_ms: 不足一秒补零" {
+  assert_eq(format_clock_ms(1), "0:00:00.001")
+  assert_eq(format_clock_ms(7), "0:00:00.007")
+  assert_eq(format_clock_ms(999), "0:00:00.999")
+}
+
+///|
+test "format_clock_ms: 分与时进位边界" {
+  assert_eq(format_clock_ms(59_999), "0:00:59.999")
+  assert_eq(format_clock_ms(60_000), "0:01:00.000")
+  assert_eq(format_clock_ms(3_599_999), "0:59:59.999")
+  assert_eq(format_clock_ms(3_600_000), "1:00:00.000")
+}
+
+///|
+test "format_clock_ms: 毫秒三位补零" {
+  assert_eq(format_clock_ms(60_007), "0:01:00.007")
+  assert_eq(format_clock_ms(3_661_050), "1:01:01.050")
+  assert_eq(format_clock_ms(7_200_000), "2:00:00.000")
+}
+
+///|
+test "render_smil: 无 epub:type 的 seq 不写属性" {
+  let seq = Seq::new("seq-1", "text/ch1.xhtml")
+  seq.add_par(
+    Par::new(
+      "par-1",
+      "text/ch1.xhtml#p-1",
+      AudioClip::from_millis("audio/a.mp3", 0, 1000),
+    ),
+  )
+  let overlay = Overlay::new()
+  overlay.add_seq(seq)
+  let smil = render_smil(overlay, SmilOptions::new())
+  assert_true(
+    smil.contains("<seq id=\"seq-1\" epub:textref=\"text/ch1.xhtml\">"),
+  )
+  assert_false(smil.contains("epub:type="))
+}
+
+///|
+test "render_smil: 多序列按登记顺序" {
+  let overlay = Overlay::new()
+  overlay.add_seq(Seq::new("seq-a", "text/ch1.xhtml"))
+  overlay.add_seq(Seq::new("seq-b", "text/ch2.xhtml"))
+  assert_eq(overlay.seq_count(), 2)
+  let smil = render_smil(overlay, SmilOptions::new())
+  assert_true(
+    smil.contains(
+      "</seq>\n    <seq id=\"seq-b\" epub:textref=\"text/ch2.xhtml\">",
+    ),
+  )
+}
+
+///|
+test "render_smil: 属性值 XML 转义" {
+  let seq = Seq::new("seq-1", "text/ch1.xhtml")
+  seq.add_par(
+    Par::new(
+      "par-1",
+      "text/ch1.xhtml#p-1",
+      AudioClip::new("audio/a&b.mp3", "0:00:00.000", "0:00:01.000"),
+    ),
+  )
+  let overlay = Overlay::new()
+  overlay.add_seq(seq)
+  let smil = render_smil(overlay, SmilOptions::new())
+  assert_true(smil.contains("src=\"audio/a&amp;b.mp3\""))
+}
+
+///|
+test "render_smil: 有 seq 无 par 时不写 par" {
+  let overlay = Overlay::new()
+  overlay.add_seq(Seq::new("seq-1", "text/ch1.xhtml"))
+  let smil = render_smil(overlay, SmilOptions::new())
+  assert_true(
+    smil.contains("<seq id=\"seq-1\" epub:textref=\"text/ch1.xhtml\">"),
+  )
+  assert_false(smil.contains("<par"))
+}
+
+///|
+test "render_smil: audio 的 clipBegin 先于 clipEnd" {
+  let seq = Seq::new("seq-1", "text/ch1.xhtml")
+  seq.add_par(
+    Par::new(
+      "par-1",
+      "text/ch1.xhtml#p-1",
+      AudioClip::from_millis("audio/x.mp3", 500, 2250),
+    ),
+  )
+  let overlay = Overlay::new()
+  overlay.add_seq(seq)
+  let smil = render_smil(overlay, SmilOptions::new())
+  assert_true(
+    smil.contains("clipBegin=\"0:00:00.500\" clipEnd=\"0:00:02.250\""),
+  )
+  assert_true(smil.contains("src=\"audio/x.mp3\""))
+}

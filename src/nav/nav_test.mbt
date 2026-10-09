@@ -198,3 +198,143 @@ test "render_ncx: 选项覆盖 uid/title 与关闭 playOrder" {
   assert_true(out.contains("xml:lang=\"en\""))
   assert_false(out.contains("playOrder"))
 }
+
+///|
+/// 构造三层章节森林：ch1 > ch1-1 > ch1-1-1，另有叶节点 ch2。
+fn deep_chapters() -> Array[@model.Chapter] {
+  let mid = @model.Chapter::new("ch1-1", "第一节")
+  mid.add_child(@model.Chapter::new("ch1-1-1", "第一节一"))
+  let ch1 = @model.Chapter::new("ch1", "第一章")
+  ch1.add_child(mid)
+  [ch1, @model.Chapter::new("ch2", "第二章")]
+}
+
+///|
+test "render_nav_list: 三层目录树层级与顺序" {
+  let expected =
+    #|<ol>
+    #|  <li><a href="text/ch1.xhtml">第一章</a>
+    #|    <ol>
+    #|      <li><a href="text/ch1-1.xhtml">第一节</a>
+    #|        <ol>
+    #|          <li><a href="text/ch1-1-1.xhtml">第一节一</a></li>
+    #|        </ol>
+    #|      </li>
+    #|    </ol>
+    #|  </li>
+    #|  <li><a href="text/ch2.xhtml">第二章</a></li>
+    #|</ol>
+  assert_eq(render_nav_list(deep_chapters(), 0), expected)
+}
+
+///|
+test "render_nav_list: 标题转义与起始缩进深度" {
+  let chapters = [@model.Chapter::new("a", "A & B <c>")]
+  assert_eq(
+    render_nav_list(chapters, 0),
+    "<ol>\n  <li><a href=\"text/a.xhtml\">A &amp; B &lt;c&gt;</a></li>\n</ol>",
+  )
+  assert_eq(
+    render_nav_list(chapters, 1),
+    "  <ol>\n    <li><a href=\"text/a.xhtml\">A &amp; B &lt;c&gt;</a></li>\n  </ol>",
+  )
+}
+
+///|
+test "render_nav: 单章节无子目录" {
+  let book = @model.Book::new(@model.Metadata::new("B", "ja", "urn:1"))
+  book.add_chapter(@model.Chapter::new("only", "唯一"))
+  let out = render_nav(book, NavOptions::new())
+  assert_true(out.contains("xml:lang=\"ja\" lang=\"ja\""))
+  assert_true(out.contains("<li><a href=\"text/only.xhtml\">唯一</a></li>"))
+  assert_true(
+    out.contains(
+      "<li><a epub:type=\"bodymatter\" href=\"text/only.xhtml\">唯一</a></li>",
+    ),
+  )
+}
+
+///|
+test "render_nav: 空章节且开启地标时不输出 landmarks" {
+  let book = @model.Book::new(@model.Metadata::new("B", "en", "urn:1"))
+  let out = render_nav(book, NavOptions::new())
+  assert_false(out.contains("landmarks"))
+  assert_true(out.contains("      <ol>\n      </ol>"))
+}
+
+///|
+test "render_nav: 标题与 nav id 属性转义" {
+  let book = @model.Book::new(@model.Metadata::new("B", "en", "urn:1"))
+  book.add_chapter(@model.Chapter::new("c", "C"))
+  let options = NavOptions::new()
+  options.set_title("目录 & 指南")
+  options.set_nav_id("a\"b")
+  let out = render_nav(book, options)
+  assert_true(out.contains("<title>目录 &amp; 指南</title>"))
+  assert_true(out.contains("<h1>目录 &amp; 指南</h1>"))
+  assert_true(out.contains("id=\"a&quot;b\""))
+}
+
+///|
+test "render_nav: 地标标题转义" {
+  let book = @model.Book::new(@model.Metadata::new("B", "en", "urn:1"))
+  book.add_chapter(@model.Chapter::new("c", "C"))
+  let options = NavOptions::new()
+  options.add_landmark(Landmark::new("cover", "cover.xhtml", "A & B"))
+  let out = render_nav(book, options)
+  assert_true(
+    out.contains(
+      "<li><a epub:type=\"cover\" href=\"cover.xhtml\">A &amp; B</a></li>",
+    ),
+  )
+}
+
+///|
+test "render_nav_map: 三层深度优先 playOrder 编号" {
+  let out = render_nav_map(deep_chapters(), true)
+  assert_true(out.contains("<navPoint id=\"navPoint-1\" playOrder=\"1\">"))
+  assert_true(out.contains("<navPoint id=\"navPoint-2\" playOrder=\"2\">"))
+  assert_true(out.contains("<navPoint id=\"navPoint-3\" playOrder=\"3\">"))
+  assert_true(out.contains("<navPoint id=\"navPoint-4\" playOrder=\"4\">"))
+  assert_true(out.contains("<content src=\"text/ch1-1-1.xhtml\"/>"))
+  assert_false(out.contains("navPoint-5"))
+}
+
+///|
+test "render_nav_map: 标题转义与 content 目标" {
+  let out = render_nav_map([@model.Chapter::new("a", "A & B")], true)
+  assert_true(out.contains("<text>A &amp; B</text>"))
+  assert_true(out.contains("<content src=\"text/a.xhtml\"/>"))
+}
+
+///|
+test "render_ncx: 空章节深度与空 navMap" {
+  let book = @model.Book::new(@model.Metadata::new("书名", "zh", "urn:1"))
+  let out = render_ncx(book, NcxOptions::new())
+  assert_true(out.contains("<meta name=\"dtb:depth\" content=\"0\"/>"))
+  assert_true(out.contains("  <navMap>\n  </navMap>"))
+  assert_false(out.contains("<navPoint"))
+}
+
+///|
+test "render_ncx: 三层深度与 docTitle/uid 转义" {
+  let book = @model.Book::new(@model.Metadata::new("书 & 名", "zh", "urn:1"))
+  for chapter in deep_chapters() {
+    book.add_chapter(chapter)
+  }
+  let options = NcxOptions::new()
+  options.set_uid("u\"id")
+  let out = render_ncx(book, options)
+  assert_true(out.contains("<meta name=\"dtb:depth\" content=\"3\"/>"))
+  assert_true(out.contains("<text>书 &amp; 名</text>"))
+  assert_true(out.contains("<meta name=\"dtb:uid\" content=\"u&quot;id\"/>"))
+}
+
+///|
+test "render_ncx: title 覆盖与文本转义" {
+  let book = @model.Book::new(@model.Metadata::new("T", "en", "urn:1"))
+  let options = NcxOptions::new()
+  options.set_title("A < B")
+  let out = render_ncx(book, options)
+  assert_true(out.contains("<text>A &lt; B</text>"))
+}
