@@ -33,8 +33,7 @@ jobs:
         run: moon build --target js
 
       - name: Test
-        # 骨架期可能尚无测试用例，此时 moon test 以非零码退出，故显式放行
-        run: moon test --target js || true
+        run: moon test --target js
 
       - name: Format check
         run: moon fmt --check
