@@ -1,11 +1,34 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "aoliaoxiaoxin/moon_epub/src/cfi"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
+pub fn parse_cfi(String) -> Cfi?
 
 // Errors
 
 // Types and methods
+pub struct Cfi {
+  segments : Array[Array[CfiStep]]
+  mut offset : Int?
+} derive(Eq, @debug.Debug)
+pub fn Cfi::indirect(Self) -> Unit
+pub fn Cfi::last_step(Self) -> CfiStep?
+pub fn Cfi::new() -> Self
+pub fn Cfi::push(Self, Int, id? : String) -> Unit
+pub fn Cfi::render(Self) -> String
+pub fn Cfi::segment_count(Self) -> Int
+pub fn Cfi::set_offset(Self, Int) -> Unit
+pub fn Cfi::step_count(Self) -> Int
+
+pub struct CfiStep {
+  index : Int
+  id : String?
+} derive(Eq, @debug.Debug)
+pub fn CfiStep::new(Int, id? : String) -> Self
 
 // Type aliases
 
