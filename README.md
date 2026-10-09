@@ -1,6 +1,6 @@
-# Moon EPUB
+# Moonbit_EPUB
 
-Moon EPUB —— 用 MoonBit 实现的 **EPUB 3 电子书生成引擎**。
+Moonbit_EPUB —— 用 MoonBit 实现的 **EPUB 3 电子书生成引擎**。
 
 从结构化的书籍模型出发，生成符合 W3C EPUB 3.3 与 Open Container Format (OCF) 3.3
 规范的 `.epub` 文件：包含 OPF 包文档、导航文档（`nav.xhtml` 与 `toc.ncx`）、

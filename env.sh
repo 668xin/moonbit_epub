@@ -1,4 +1,4 @@
-# Moon EPUB 开发环境（bash）
+# Moonbit_EPUB 开发环境（bash）
 #
 # 用途：
 #   1. MOON_CORE_OVERRIDE —— 本机 moon 工具链需要它指向核心库源码目录，

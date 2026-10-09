@@ -1,5 +1,5 @@
 ///|
-/// Moon EPUB 命令行工具入口（S8）。
+/// Moonbit_EPUB 命令行工具入口（S8）。
 ///
 /// 子命令：
 /// - `build <example> [--format base64|hex]` 生成 EPUB 并以文本编码输出；

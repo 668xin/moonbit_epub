@@ -1,4 +1,4 @@
-// Moon EPUB — EPUB 3 电子书生成引擎
+// Moonbit_EPUB — EPUB 3 电子书生成引擎
 //
 // 重要：preferred_target 必须为 "js"。
 // 本机 wasm-gc 后端存在两个致命问题：
@@ -11,7 +11,7 @@ name = "aoliaoxiaoxin/moon_epub"
 
 version = "0.1.0"
 
-readme = "README.mbt.md"
+readme = "README.md"
 
 repository = "https://gitee.com/aoliaoxiaoxin/moonbit_epub"
 
