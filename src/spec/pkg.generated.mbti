@@ -18,6 +18,10 @@ pub let attr_full_path : String
 
 pub let conforms_to_wcag_aa : String
 
+pub fn content_identifier(String) -> String
+
+pub fn content_uuid(String) -> String
+
 pub let dc_contributor : String
 
 pub let dc_coverage : String
@@ -97,6 +101,8 @@ pub let epub_type_bodymatter : String
 pub let epub_type_landmarks : String
 
 pub let epub_type_toc : String
+
+pub let epub_uuid_namespace : String
 
 pub fn extension_of(String) -> String
 
@@ -222,6 +228,8 @@ pub let ocf_version : String
 
 pub let package_version : String
 
+pub fn parse_uuid(String) -> Bytes?
+
 pub fn path_basename(String) -> String
 
 pub fn path_dirname(String) -> String
@@ -256,11 +264,15 @@ pub let property_modified : String
 
 pub let scheme_marc_relators : String
 
+pub fn sha1(Bytes) -> Bytes
+
 pub let smil_version : String
 
 pub let urn_uuid_prefix : String
 
 pub fn utf8_len(String) -> Int
+
+pub fn uuid_v5(String, String) -> String?
 
 pub fn xml_escape(String) -> String
 

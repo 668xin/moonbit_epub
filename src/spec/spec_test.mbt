@@ -234,3 +234,104 @@ test "path_basename / path_dirname: 根目录与空串边界" {
   assert_eq(path_basename(""), "")
   assert_eq(path_basename("abc"), "abc")
 }
+
+///|
+/// 把字符串按 UTF-8 编码为字节。
+fn bytes_of(text : String) -> Bytes {
+  let buf = Buffer()
+  buf.write_string_utf8(text)
+  buf.to_bytes()
+}
+
+///|
+/// 把字节序列编码为小写十六进制，便于断言摘要。
+fn hex_of(data : Bytes) -> String {
+  let out : Array[Char] = []
+  for i in 0..<data.length() {
+    let v = data[i].to_uint()
+    let hi = (v >> 4).reinterpret_as_int()
+    let lo = (v & 0x0FU).reinterpret_as_int()
+    out.push(
+      if hi < 10 {
+        Int::unsafe_to_char(48 + hi)
+      } else {
+        Int::unsafe_to_char(87 + hi)
+      },
+    )
+    out.push(
+      if lo < 10 {
+        Int::unsafe_to_char(48 + lo)
+      } else {
+        Int::unsafe_to_char(87 + lo)
+      },
+    )
+  }
+  String::from_array(out)
+}
+
+///|
+test "sha1: 标准测试向量（含跨分组）" {
+  assert_eq(
+    hex_of(sha1(bytes_of("abc"))),
+    "a9993e364706816aba3e25717850c26c9cd0d89d",
+  )
+  assert_eq(
+    hex_of(sha1(bytes_of(""))),
+    "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+  )
+  // 56 字节输入填充后跨两个 512 位分组。
+  assert_eq(
+    hex_of(
+      sha1(bytes_of("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")),
+    ),
+    "84983e441c3bd26ebaae4aa1f95129e5e54670f1",
+  )
+}
+
+///|
+test "parse_uuid: 合法文本与非法输入" {
+  match parse_uuid(epub_uuid_namespace) {
+    Some(bytes) => assert_eq(bytes.length(), 16)
+    None => fail("默认命名空间应可解析")
+  }
+  assert_true(parse_uuid("6ba7b8109dad11d180b400c04fd430c8") is None)
+  assert_true(parse_uuid("zzzzzzzz-9dad-11d1-80b4-00c04fd430c8") is None)
+  assert_true(parse_uuid("6ba7b810-9dad-11d1-80b4-00c04fd430c") is None)
+  assert_true(parse_uuid("") is None)
+}
+
+///|
+test "uuid_v5: RFC 4122 版本 5 命名空间向量" {
+  assert_eq(
+    uuid_v5("6ba7b810-9dad-11d1-80b4-00c04fd430c8", "www.example.com"),
+    Some("2ed6657d-e927-568b-95e1-2665a8aea6a2"),
+  )
+  assert_eq(uuid_v5("not-a-uuid", "x"), None)
+  assert_eq(
+    uuid_v5(epub_uuid_namespace, "最小示例"),
+    Some(content_uuid("最小示例")),
+  )
+}
+
+///|
+test "content_identifier: 基于内容的确定性 urn:uuid 派生" {
+  assert_eq(
+    content_uuid("最小示例"),
+    "1da3e460-5d02-5384-8fd4-f33f02944592",
+  )
+  assert_eq(
+    content_identifier("最小示例"),
+    "urn:uuid:1da3e460-5d02-5384-8fd4-f33f02944592",
+  )
+  // 幂等与内容敏感性。
+  assert_eq(
+    content_identifier("最小示例"),
+    content_identifier("最小示例"),
+  )
+  assert_true(
+    content_identifier("最小示例") != content_identifier("最小示例2"),
+  )
+  // `urn:uuid:` 前缀（9 字符）+ 36 字符 UUID。
+  assert_eq(content_identifier("x").length(), 45)
+  assert_true(content_identifier("x").has_prefix(urn_uuid_prefix))
+}
