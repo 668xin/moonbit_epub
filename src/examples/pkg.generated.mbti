@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "aoliaoxiaoxin/moon_epub/src/examples"
+
+import {
+  "aoliaoxiaoxin/moon_epub/src/model",
+}
+
+// Values
+pub fn by_name(String) -> @model.Book?
+
+pub fn minimal() -> @model.Book
+
+pub fn multi_chapter() -> @model.Book
+
+pub fn names() -> Array[String]
+
+pub fn styled() -> @model.Book
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

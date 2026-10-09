@@ -1,5 +1,12 @@
 import {
   "moonbitlang/core/env",
+  "moonbitlang/core/encoding/base64",
+  "moonbitlang/core/encoding/hex",
+  "aoliaoxiaoxin/moon_epub/src/spec",
+  "aoliaoxiaoxin/moon_epub/src/model",
+  "aoliaoxiaoxin/moon_epub/src/ocf",
+  "aoliaoxiaoxin/moon_epub/src/validate",
+  "aoliaoxiaoxin/moon_epub/src/examples",
 }
 
 pkgtype(kind: "executable")

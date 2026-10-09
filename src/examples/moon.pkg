@@ -1,0 +1,6 @@
+import {
+  "aoliaoxiaoxin/moon_epub/src/spec",
+  "aoliaoxiaoxin/moon_epub/src/model",
+  "aoliaoxiaoxin/moon_epub/src/assets",
+  "aoliaoxiaoxin/moon_epub/src/a11y",
+}
