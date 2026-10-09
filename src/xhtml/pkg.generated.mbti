@@ -1,11 +1,31 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "aoliaoxiaoxin/moon_epub/src/xhtml"
 
+import {
+  "aoliaoxiaoxin/moon_epub/src/model",
+}
+
 // Values
+pub fn render_block(@model.Block) -> String
+
+pub fn render_blocks(Array[@model.Block]) -> String
+
+pub fn render_document(@model.Chapter, XhtmlOptions) -> String
+
+pub fn render_inline(@model.Inline) -> String
+
+pub fn render_inlines(Array[@model.Inline]) -> String
 
 // Errors
 
 // Types and methods
+pub struct XhtmlOptions {
+  mut language : String
+  stylesheets : Array[String]
+}
+pub fn XhtmlOptions::add_stylesheet(Self, String) -> Unit
+pub fn XhtmlOptions::new(language? : String) -> Self
+pub fn XhtmlOptions::set_language(Self, String) -> Unit
 
 // Type aliases
 
