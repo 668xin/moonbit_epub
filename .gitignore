@@ -4,3 +4,6 @@ target/
 target
 .mooncakes/
 .moonagent/
+
+# 本地开发计划（不纳入版本控制）
+/开发工作计划.md
