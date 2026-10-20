@@ -113,7 +113,7 @@ pub fn validate_resources(resources : Array[@model.Resource]) -> Report {
     if resource.media_type.is_empty() {
       report.error("RES-003", location, "资源缺少媒体类型")
     } else {
-      let inferred = @spec.media_type_of_path(resource.href)
+      let inferred = @assets.mime_type_of(resource.href)
       if inferred != @spec.mt_octet_stream && inferred != resource.media_type {
         report.warning(
           "RES-004",
@@ -156,6 +156,7 @@ pub fn validate_manifest(manifest : @model.Manifest) -> Report {
     )
   }
   let seen_href : Map[String, Bool] = Map([])
+  let seen_id : Map[String, Bool] = Map([])
   for item in manifest.items {
     let location = if item.id.is_empty() {
       "package/manifest/item"
@@ -164,6 +165,10 @@ pub fn validate_manifest(manifest : @model.Manifest) -> Report {
     }
     if item.id.is_empty() || !@spec.is_valid_id(item.id) {
       report.error("OPF-003", location, "清单条目 id 为空或非法")
+    } else if seen_id.contains(item.id) {
+      report.error("OPF-008", location, "清单条目 id 重复")
+    } else {
+      seen_id.set(item.id, true)
     }
     if item.href.is_empty() {
       report.error("OPF-004", location, "清单条目 href 为空")
@@ -365,6 +370,20 @@ pub fn validate_container(entries : Array[ContainerEntry]) -> Report {
 // ---------------------------------------------------------------------------
 // 综合校验
 // ---------------------------------------------------------------------------
+
+///|
+/// 对已生成的 EPUB 字节流做容器级校验。
+///
+/// 从 ZIP 中央目录读取条目路径与压缩方式，复用 `validate_container`
+/// 检查 `mimetype` 位置与压缩方式、必需文件存在性与条目唯一性。
+pub fn validate_package(data : Bytes) -> Report {
+  let entries = @zip.entries(data)
+  let container_entries : Array[ContainerEntry] = []
+  for entry in entries {
+    container_entries.push(ContainerEntry::new(entry.path, entry.stored))
+  }
+  validate_container(container_entries)
+}
 
 ///|
 /// 对书籍模型做完整的模型级校验：元数据、章节、资源、清单、阅读顺序与可达性。

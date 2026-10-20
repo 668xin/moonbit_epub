@@ -21,6 +21,8 @@ pub fn validate_manifest(@model.Manifest) -> Report
 
 pub fn validate_metadata(@model.Metadata) -> Report
 
+pub fn validate_package(Bytes) -> Report
+
 pub fn validate_reachability(Array[@model.Chapter], Array[@model.Resource], @model.Manifest) -> Report
 
 pub fn validate_resources(Array[@model.Resource]) -> Report

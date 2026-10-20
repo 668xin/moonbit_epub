@@ -8,4 +8,4 @@ import {
 // `implicit_impl_as_method` 过渡期告警（MoonBit 正在废弃隐式方法提升），
 // 与本项目代码无关，统一关闭以保持构建输出干净。
 
-warnings = "-implicit_impl_as_method"
+warnings = "-implicit_impl_as_method-test_unqualified_package"

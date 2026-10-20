@@ -415,3 +415,32 @@ test "zip: 大文本条目的压缩元数据与解压一致" {
   let payload = slice_bytes(data, 30 + @spec.utf8_len("large.txt"), comp)
   assert_eq(inflate_to_string(payload), text)
 }
+
+///|
+test "entries: 解析中央目录的路径与压缩方式" {
+  let out : Array[Char] = []
+  for _ in 0..<200 {
+    out.push_iter("repeat me. ".iter())
+  }
+  let text = String::from_array(out)
+  let raw = ascii_bytes(text)
+  let zip = ZipWriter::new()
+  zip.add_stored("mimetype", b"application/epub+zip")
+  zip.add_deflated("章节.xhtml", raw)
+  let infos = entries(zip.finish())
+  assert_eq(infos.length(), 2)
+  assert_eq(infos[0].path, "mimetype")
+  assert_true(infos[0].stored)
+  assert_eq(infos[0].uncompressed_size, 20)
+  assert_eq(infos[1].path, "章节.xhtml")
+  assert_false(infos[1].stored)
+  assert_eq(infos[1].uncompressed_size, raw.length())
+  assert_true(infos[1].compressed_size < infos[1].uncompressed_size)
+}
+
+///|
+test "entries: 非法数据返回空数组" {
+  assert_eq(entries(b"not a zip").length(), 0)
+  assert_eq(entries(b"").length(), 0)
+  assert_eq(entries(b"PK").length(), 0)
+}

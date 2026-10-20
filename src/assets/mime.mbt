@@ -55,7 +55,8 @@ pub fn mime_type_of(path : String) -> String {
     "xml" => @spec.mt_xml
     "opf" => @spec.mt_opf
     "ncx" => @spec.mt_ncx
-    "js" => @spec.mt_js
+    "js" | "mjs" => @spec.mt_js
+    "smil" => @spec.mt_smil
     "txt" => @spec.mt_txt
     "png" => @spec.mt_png
     "jpg" | "jpeg" | "jpe" => @spec.mt_jpeg

@@ -67,7 +67,11 @@ fn assemble(book : @model.Book) -> Unit {
 ///|
 /// 最小可打包书籍：单章节单段落，含可访问性元数据。
 pub fn minimal() -> @model.Book {
-  let metadata = base_metadata("最小示例", "zh-CN", "urn:uuid:minimal-0001")
+  let metadata = base_metadata(
+    "最小示例",
+    "zh-CN",
+    @spec.content_identifier("minimal"),
+  )
   @a11y.Accessibility::text_only().apply_to(metadata)
   let book = @model.Book::new(metadata)
   book.add_chapter(
@@ -88,7 +92,9 @@ pub fn minimal() -> @model.Book {
 /// 多种块级元素。
 pub fn multi_chapter() -> @model.Book {
   let metadata = base_metadata(
-    "多章节示例", "zh-CN", "urn:uuid:multi-0002",
+    "多章节示例",
+    "zh-CN",
+    @spec.content_identifier("multi-chapter"),
   )
   @a11y.Accessibility::text_only().apply_to(metadata)
   let book = @model.Book::new(metadata)
@@ -115,7 +121,11 @@ pub fn multi_chapter() -> @model.Book {
       ],
       [[[@model.Inline::text("spine")], [@model.Inline::text("阅读顺序")]]],
     ),
-    @model.Block::paragraph("参见脚注说明。"),
+    @model.Block::paragraph_of([
+      @model.Inline::text("参见脚注说明"),
+      @model.Inline::footnote_ref("note-1"),
+      @model.Inline::text("。"),
+    ]),
     @model.Block::note("note-1", [
       @model.Block::paragraph("这是脚注正文。"),
     ]),
@@ -145,7 +155,11 @@ pub fn multi_chapter() -> @model.Book {
 ///|
 /// 自定义样式书籍：内置阅读器友好 CSS 与自定义规则合成，另附封面图片资源。
 pub fn styled() -> @model.Book {
-  let metadata = base_metadata("样式示例", "zh-CN", "urn:uuid:styled-0003")
+  let metadata = base_metadata(
+    "样式示例",
+    "zh-CN",
+    @spec.content_identifier("styled"),
+  )
   @a11y.Accessibility::text_only().apply_to(metadata)
   let book = @model.Book::new(metadata)
   book.add_chapter(
@@ -154,7 +168,7 @@ pub fn styled() -> @model.Book {
       @model.Block::paragraph(
         "本示例演示自定义 CSS 的注入与合成。",
       ),
-      @model.Block::image("images/cover.png", "封面示意"),
+      @model.Block::image("../images/cover.svg", "封面示意"),
     ]),
   )
   book.add_resource(
@@ -163,7 +177,9 @@ pub fn styled() -> @model.Book {
     ),
   )
   book.add_resource(
-    @model.Resource::new("images/cover.png", @spec.mt_png, b"PNG-placeholder"),
+    @model.Resource::text(
+      "images/cover.svg", @spec.mt_svg, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"600\" height=\"800\" viewBox=\"0 0 600 800\"><rect width=\"600\" height=\"800\" fill=\"#eef\"/><text x=\"300\" y=\"400\" text-anchor=\"middle\" font-size=\"48\" fill=\"#336\">封面</text></svg>",
+    ),
   )
   assemble(book)
   book

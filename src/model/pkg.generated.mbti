@@ -44,6 +44,7 @@ pub fn Block::image(String, String) -> Self
 pub fn Block::list(Bool, Array[Array[Self]]) -> Self
 pub fn Block::note(String, Array[Self]) -> Self
 pub fn Block::paragraph(String) -> Self
+pub fn Block::paragraph_of(Array[Inline]) -> Self
 pub fn Block::table(Array[Array[Inline]], Array[Array[Array[Inline]]]) -> Self
 
 pub struct Book {
@@ -186,12 +187,13 @@ pub fn Series::new(String, index? : Int) -> Self
 pub struct Spine {
   items : Array[SpineItem]
   mut toc : String?
-  page_progression_direction : String?
+  mut page_progression_direction : String?
 } derive(Eq, @debug.Debug)
 pub fn Spine::add(Self, SpineItem) -> Unit
 pub fn Spine::contains(Self, String) -> Bool
 pub fn Spine::idrefs(Self) -> Array[String]
 pub fn Spine::new() -> Self
+pub fn Spine::set_page_progression_direction(Self, String) -> Unit
 pub fn Spine::set_toc(Self, String) -> Unit
 
 pub struct SpineItem {

@@ -365,6 +365,14 @@ test "Spine: 空、idrefs 顺序与 toc 默认" {
 }
 
 ///|
+test "Spine: page-progression-direction 设置" {
+  let spine = Spine::new()
+  assert_eq(spine.page_progression_direction, None)
+  spine.set_page_progression_direction("rtl")
+  assert_eq(spine.page_progression_direction, Some("rtl"))
+}
+
+///|
 test "Chapter: 空森林与单节点边界" {
   assert_eq(count_chapters([]), 0)
   assert_eq(chapter_depth([]), 0)

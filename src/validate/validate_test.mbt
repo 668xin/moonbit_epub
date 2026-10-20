@@ -392,3 +392,65 @@ test "validate_book: 空书籍触发基础缺陷" {
   assert_true(has_code(report, "OPF-001"))
   assert_true(has_code(report, "SPN-001"))
 }
+
+///|
+/// 把文本编码为 UTF-8 字节。
+fn text_bytes(text : String) -> Bytes {
+  let buf = Buffer()
+  buf.write_string_utf8(text)
+  buf.to_bytes()
+}
+
+///|
+test "validate_package: 合法容器通过" {
+  let zip = @zip.ZipWriter::new()
+  zip.add_stored("mimetype", text_bytes("application/epub+zip"))
+  zip.add_deflated("META-INF/container.xml", text_bytes("<container/>"))
+  zip.add_deflated("OEBPS/content.opf", text_bytes("<package/>"))
+  let report = validate_package(zip.finish())
+  assert_true(report.is_ok())
+  assert_eq(report.length(), 0)
+}
+
+///|
+test "validate_package: mimetype 非首条目" {
+  let zip = @zip.ZipWriter::new()
+  zip.add_deflated("META-INF/container.xml", text_bytes("<container/>"))
+  zip.add_stored("mimetype", text_bytes("application/epub+zip"))
+  zip.add_deflated("OEBPS/content.opf", text_bytes("<package/>"))
+  let report = validate_package(zip.finish())
+  assert_true(has_code(report, "CON-002"))
+}
+
+///|
+test "validate_package: mimetype 被压缩" {
+  let out : Array[Char] = []
+  for _ in 0..<200 {
+    out.push_iter("application/epub+zip ".iter())
+  }
+  let zip = @zip.ZipWriter::new()
+  zip.add_deflated("mimetype", text_bytes(String::from_array(out)))
+  zip.add_deflated("META-INF/container.xml", text_bytes("<container/>"))
+  zip.add_deflated("OEBPS/content.opf", text_bytes("<package/>"))
+  let report = validate_package(zip.finish())
+  assert_true(has_code(report, "CON-003"))
+}
+
+///|
+test "validate_package: 非 ZIP 数据" {
+  let report = validate_package(b"not a zip")
+  assert_true(has_code(report, "CON-001"))
+}
+
+///|
+test "validate_manifest: 重复清单 id 触发 OPF-008" {
+  let manifest = @model.Manifest::new()
+  let nav = @model.ManifestItem::new("nav", "nav.xhtml", @spec.mt_xhtml)
+  nav.add_property(@spec.epub_property_nav)
+  let _ = manifest.add(nav)
+  manifest.items.push(
+    @model.ManifestItem::new("nav", "other.xhtml", @spec.mt_xhtml),
+  )
+  let report = validate_manifest(manifest)
+  assert_true(has_code(report, "OPF-008"))
+}

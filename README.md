@@ -30,8 +30,8 @@ XHTML5 内容文档、样式与资源管理、Media Overlays 朗读同步、OCF/
 moon add 668xin/moon_epub
 ```
 
-> 本库的 `preferred_target` 为 `js`。使用本机的 `wasm-gc` 后端时，`println`
-> 输出可能丢失且 `moon test` 会崩溃，故所有命令建议显式携带 `--target js`。
+> 本库的 `preferred_target` 为 `wasm-gc`，`check` / `build` / `test` / `run`
+> 均已验证通过。如需兼容旧版工具链，可显式改用 `--target js`。
 
 ## 命令行工具
 
@@ -39,22 +39,22 @@ moon add 668xin/moon_epub
 
 ```bash
 # 生成 EPUB 并以 Base64 输出（核心库无文件 IO，由 shell 解码落盘）
-moon run src/cli --target js -- build minimal | base64 -d > minimal.epub
+moon run src/cli --target wasm-gc -- build minimal | base64 -d > minimal.epub
 
 # 以十六进制输出（便于在无 base64 工具的环境中使用）
-moon run src/cli --target js -- build multi-chapter --format hex
+moon run src/cli --target wasm-gc -- build multi-chapter --format hex
 
 # 校验结构并输出文本诊断报告
-moon run src/cli --target js -- check multi-chapter
+moon run src/cli --target wasm-gc -- check multi-chapter
 
 # 以 JSON 输出机器可读报告
-moon run src/cli --target js -- check multi-chapter --json
+moon run src/cli --target wasm-gc -- check multi-chapter --json
 
 # 打印书籍结构树
-moon run src/cli --target js -- inspect styled
+moon run src/cli --target wasm-gc -- inspect styled
 
 # 列出内置示例
-moon run src/cli --target js -- examples
+moon run src/cli --target wasm-gc -- examples
 ```
 
 ## 作为库使用
@@ -65,10 +65,13 @@ let book = @examples.multi_chapter()
 
 // 打包为 EPUB 字节流
 let options = @ocf.PackageOptions::new()
+// 内容文档位于 OEBPS/text/，样式表位于 OEBPS/styles/
+options.add_stylesheet("../styles/style.css")
 let epub : Bytes = @ocf.package_book(book, options)
 
-// 结构校验（独立于生成层）
+// 结构校验：模型级 + 生成容器的 OCF 布局
 let report = @validate.validate_book(book)
+report.merge(@validate.validate_package(epub))
 println(report.summary())
 if report.is_ok() {
   println("结构校验通过")
@@ -91,7 +94,7 @@ if report.is_ok() {
 | `cfi`      | EPUB CFI 定位路径构造与解析                                                       |
 | `a11y`     | 可访问性元数据体系                                                                |
 | `media`    | Media Overlays / SMIL 朗读同步                                                    |
-| `validate` | 结构校验规则集与诊断报告                                                          |
+| `validate` | 结构校验规则集与诊断报告（模型级 + 生成容器级）                                   |
 | `examples` | 三个可直接打包的示例书籍（`minimal` / `multi-chapter` / `styled`）                |
 | `cli`      | 命令行入口                                                                        |
 
@@ -101,6 +104,13 @@ if report.is_ok() {
 - `multi-chapter`：嵌套目录与标题、段落、列表、引用、代码块、表格、脚注等
   多种块级元素。
 - `styled`：内置阅读器友好 CSS 与自定义 CSS 合成，另附封面图片资源。
+
+校验报告示例（内置示例均通过）：
+
+```text
+$ moon run src/cli --target wasm-gc -- check multi-chapter
+报告：0 个错误，0 个警告，0 个提示
+```
 
 ## 目录结构
 
@@ -127,18 +137,18 @@ src/
 ## 验证与测试
 
 ```bash
-moon check --target js   # 类型检查
-moon build --target js   # 构建
-moon test  --target js   # 全量单元测试
-moon fmt   --check       # 格式检查
-moon info  --target js   # 生成 .mbti 接口摘要
+moon check --target wasm-gc   # 类型检查
+moon build --target wasm-gc   # 构建
+moon test  --target wasm-gc   # 全量单元测试
+moon fmt   --check            # 格式检查
+moon info                     # 生成 .mbti 接口摘要
 ```
 
 CLI 生成的 `.epub` 可用 Python 标准库交叉验证其 ZIP 兼容性：
 
 ```python
-import base64, io, zipfile
-data = base64.b64decode(open("minimal.epub.b64").read())
+import io, zipfile
+data = open("minimal.epub", "rb").read()
 z = zipfile.ZipFile(io.BytesIO(data))
 print(z.namelist(), z.testzip(), z.read("mimetype").decode())
 ```
@@ -156,8 +166,8 @@ moon publish          # 发布当前版本（moon.mod 中的 version 字段）
 发布前请确认：
 
 - `moon.mod` 的 `name` / `version` / `license` / `readme` / `repository` 字段完整；
-- `moon check --target js`、`moon test --target js`、`moon fmt --check` 全部通过；
-- 更新 `version` 后重新执行 `moon info --target js` 以刷新接口摘要。
+- `moon check --target wasm-gc`、`moon test --target wasm-gc`、`moon fmt --check` 全部通过；
+- 更新 `version` 后重新执行 `moon info` 以刷新接口摘要。
 
 ## 许可证
 

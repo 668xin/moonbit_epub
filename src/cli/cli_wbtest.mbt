@@ -91,7 +91,7 @@ test "render_inspect: styled 资源与清单计数" {
   assert_true(text.contains("章节（1）："))
   assert_true(text.contains("• 样式演示 [ch1]"))
   assert_true(text.contains("资源（2）："))
-  assert_true(text.contains("images/cover.png  image/png"))
+  assert_true(text.contains("images/cover.svg  image/svg+xml"))
   assert_true(text.contains("清单条目：5"))
   assert_true(text.contains("阅读顺序条目：1"))
 }

@@ -100,7 +100,7 @@ pub struct Spine {
   // `spine@toc`，指向 toc.ncx 的清单 id（EPUB 2 兼容）
   mut toc : String?
   // `spine@page-progression-direction`：`ltr` / `rtl` / `default`
-  page_progression_direction : String?
+  mut page_progression_direction : String?
 } derive(Eq, @debug.Debug)
 
 ///|
@@ -140,6 +140,15 @@ pub fn Spine::contains(self : Spine, idref : String) -> Bool {
 /// 设置 `spine@toc`，指向 toc.ncx 的清单 id。
 pub fn Spine::set_toc(self : Spine, toc : String) -> Unit {
   self.toc = Some(toc)
+}
+
+///|
+/// 设置 `spine@page-progression-direction`（`ltr` / `rtl` / `default`）。
+pub fn Spine::set_page_progression_direction(
+  self : Spine,
+  direction : String,
+) -> Unit {
+  self.page_progression_direction = Some(direction)
 }
 
 ///|

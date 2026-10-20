@@ -161,6 +161,8 @@ test "mime_type_of: 扩展名映射覆盖" {
   assert_eq(mime_type_of("a.opf"), @spec.mt_opf)
   assert_eq(mime_type_of("a.ncx"), @spec.mt_ncx)
   assert_eq(mime_type_of("a.js"), @spec.mt_js)
+  assert_eq(mime_type_of("a.mjs"), @spec.mt_js)
+  assert_eq(mime_type_of("a.smil"), @spec.mt_smil)
   assert_eq(mime_type_of("a.txt"), @spec.mt_txt)
   assert_eq(mime_type_of("a.gif"), @spec.mt_gif)
   assert_eq(mime_type_of("a.svg"), @spec.mt_svg)

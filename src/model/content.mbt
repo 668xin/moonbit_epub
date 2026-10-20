@@ -87,6 +87,12 @@ pub fn Block::paragraph(text : String) -> Block {
 }
 
 ///|
+/// 构造由内联元素序列组成的段落。
+pub fn Block::paragraph_of(children : Array[Inline]) -> Block {
+  Paragraph(children)
+}
+
+///|
 /// 构造仅含纯文本的标题。
 pub fn Block::heading(level : Int, text : String) -> Block {
   Heading(level~, children=[Text(text)])

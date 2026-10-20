@@ -4,3 +4,5 @@ import {
   "668xin/moon_epub/src/assets",
   "668xin/moon_epub/src/a11y",
 }
+
+warnings = "-implicit_impl_as_method-test_unqualified_package"

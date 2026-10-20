@@ -216,6 +216,9 @@ fn run_check(argv : Array[String]) -> Unit {
     None => unknown_example(name)
     Some(book) => {
       let report = @validate.validate_book(book)
+      // 同时检查实际生成的容器布局（mimetype 位置、必需文件等）
+      let packaged = @ocf.package_book(book, @ocf.PackageOptions::new())
+      report.merge(@validate.validate_package(packaged))
       if has_flag(argv, "--json") {
         println(@validate.render_json(report))
       } else {

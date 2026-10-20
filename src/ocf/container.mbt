@@ -173,10 +173,66 @@ fn utf8_bytes(text : String) -> Bytes {
 }
 
 ///|
+/// 把既有清单条目上的可定制字段合并到自动装配的条目。
+///
+/// 自动装配负责 `id` / `href` / `media-type` 与文件实际位置，故只继承
+/// `properties`、`fallback` 与 `media-overlay`。
+fn merge_manifest_fields(
+  target : @model.ManifestItem,
+  source : @model.ManifestItem,
+) -> Unit {
+  for property in source.properties {
+    if !target.has_property(property) {
+      target.add_property(property)
+    }
+  }
+  match source.fallback {
+    Some(fallback) => target.set_fallback(fallback)
+    None => ()
+  }
+  match source.media_overlay {
+    Some(media_overlay) => target.set_media_overlay(media_overlay)
+    None => ()
+  }
+}
+
+///|
+/// 按 href 优先、id 次之查找既有清单条目。
+fn find_existing_item(
+  manifest : @model.Manifest,
+  href : String,
+  id : String,
+) -> @model.ManifestItem? {
+  match manifest.find_by_href(href) {
+    Some(item) => Some(item)
+    None => manifest.find_by_id(id)
+  }
+}
+
+///|
+/// 查找既有导航条目：优先 `properties` 含 `nav`，其次约定 id / 文件名。
+fn find_nav_item(
+  manifest : @model.Manifest,
+  nav_filename : String,
+) -> @model.ManifestItem? {
+  for item in manifest.items {
+    if item.has_property(@spec.epub_property_nav) {
+      return Some(item)
+    }
+  }
+  match manifest.find_by_id(@spec.manifest_id_nav) {
+    Some(item) => Some(item)
+    None => manifest.find_by_href(nav_filename)
+  }
+}
+
+///|
 /// 依据章节树与资源装配清单：导航、NCX、各章节内容文档与全部资源。
 ///
 /// 章节以 `chapter.id` 作为清单 ID；资源 ID 由其 href 规范化得到，
 /// ID 冲突时后续条目被忽略（`Manifest::add` 拒绝重复）。
+/// 若书籍已自行登记同名 / 同 href 条目，其 `properties`、`fallback` 与
+/// `media-overlay` 会被继承，避免端到端打包丢失用户的清单定制。
 fn build_manifest(
   book : @model.Book,
   options : PackageOptions,
@@ -188,42 +244,69 @@ fn build_manifest(
     @spec.mt_xhtml,
   )
   nav_item.add_property(@spec.epub_property_nav)
+  match find_nav_item(book.manifest, options.nav_filename) {
+    Some(existing) => merge_manifest_fields(nav_item, existing)
+    None => ()
+  }
   let _ = manifest.add(nav_item)
-  let _ = manifest.add(
-    @model.ManifestItem::new(
-      @spec.manifest_id_ncx,
-      options.ncx_filename,
-      @spec.mt_ncx,
-    ),
+  let ncx_item = @model.ManifestItem::new(
+    @spec.manifest_id_ncx,
+    options.ncx_filename,
+    @spec.mt_ncx,
   )
+  match
+    find_existing_item(
+      book.manifest,
+      options.ncx_filename,
+      @spec.manifest_id_ncx,
+    ) {
+    Some(existing) => merge_manifest_fields(ncx_item, existing)
+    None => ()
+  }
+  let _ = manifest.add(ncx_item)
   for chapter in @model.flatten_chapters(book.chapters) {
-    let _ = manifest.add(
-      @model.ManifestItem::new(
-        chapter.id,
-        @model.chapter_href(chapter),
-        @spec.mt_xhtml,
-      ),
-    )
+    let href = @model.chapter_href(chapter)
+    let item = @model.ManifestItem::new(chapter.id, href, @spec.mt_xhtml)
+    match find_existing_item(book.manifest, href, chapter.id) {
+      Some(existing) => merge_manifest_fields(item, existing)
+      None => ()
+    }
+    let _ = manifest.add(item)
   }
   for resource in book.resources {
-    let _ = manifest.add(
-      @model.ManifestItem::new(
-        @model.resource_id(resource),
-        resource.href,
-        resource.media_type,
-      ),
-    )
+    let id = @model.resource_id(resource)
+    let item = @model.ManifestItem::new(id, resource.href, resource.media_type)
+    match find_existing_item(book.manifest, resource.href, id) {
+      Some(existing) => merge_manifest_fields(item, existing)
+      None => ()
+    }
+    let _ = manifest.add(item)
   }
   manifest
 }
 
 ///|
-/// 依据章节树装配阅读顺序：深度优先顺序，`spine@toc` 指向 NCX 条目。
+/// 依据章节树装配阅读顺序：优先沿用书籍已定义的 `spine`，为空时按
+/// 章节树深度优先顺序生成；`spine@toc` 默认指向 NCX 条目。
 fn build_spine(book : @model.Book) -> @model.Spine {
   let spine = @model.Spine::new()
-  spine.set_toc(@spec.manifest_id_ncx)
-  for chapter in @model.flatten_chapters(book.chapters) {
-    spine.add(@model.SpineItem::new(chapter.id))
+  if book.spine.items.length() > 0 {
+    for item in book.spine.items {
+      spine.add(item)
+    }
+    match book.spine.toc {
+      Some(toc) => spine.set_toc(toc)
+      None => spine.set_toc(@spec.manifest_id_ncx)
+    }
+    match book.spine.page_progression_direction {
+      Some(direction) => spine.set_page_progression_direction(direction)
+      None => ()
+    }
+  } else {
+    spine.set_toc(@spec.manifest_id_ncx)
+    for chapter in @model.flatten_chapters(book.chapters) {
+      spine.add(@model.SpineItem::new(chapter.id))
+    }
   }
   spine
 }

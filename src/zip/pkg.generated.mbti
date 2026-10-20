@@ -10,10 +10,19 @@ pub fn crc32(Bytes) -> UInt
 
 pub fn deflate(Bytes) -> Bytes
 
+pub fn entries(Bytes) -> Array[ZipEntryInfo]
+
 // Errors
 
 // Types and methods
 type ZipEntry derive(@debug.Debug)
+
+pub struct ZipEntryInfo {
+  path : String
+  stored : Bool
+  compressed_size : Int
+  uncompressed_size : Int
+} derive(Eq, @debug.Debug)
 
 pub enum ZipMethod {
   Stored

@@ -134,8 +134,8 @@ test "styled: 资源登记与封面图片" {
   assert_eq(book.resources.length(), 2)
   assert_true(resources_registered(book))
   assert_true(chapters_registered(book))
-  match book.manifest.find_by_href("images/cover.png") {
-    Some(item) => assert_eq(item.media_type, @spec.mt_png)
+  match book.manifest.find_by_href("images/cover.svg") {
+    Some(item) => assert_eq(item.media_type, @spec.mt_svg)
     None => assert_true(false)
   }
 }
@@ -151,4 +151,40 @@ test "minimal: 含可访问性元数据" {
   }
   assert_true(found_mode)
   assert_eq(book.metadata.language, "zh-CN")
+}
+
+///|
+test "styled: 封面图片路径相对内容文档" {
+  let book = styled()
+  let mut found = false
+  for block in book.chapters[0].body {
+    match block {
+      @model.Image(src~, ..) => if src == "../images/cover.svg" { found = true }
+      _ => ()
+    }
+  }
+  assert_true(found)
+}
+
+///|
+test "multi_chapter: 脚注引用与正文成对出现" {
+  let book = multi_chapter()
+  let chapter = book.find_chapter("ch2").unwrap()
+  let mut has_ref = false
+  let mut has_note = false
+  for block in chapter.body {
+    match block {
+      @model.Paragraph(inlines) =>
+        for inline in inlines {
+          match inline {
+            @model.FootnoteRef(id~) => if id == "note-1" { has_ref = true }
+            _ => ()
+          }
+        }
+      @model.Note(id~, ..) => if id == "note-1" { has_note = true }
+      _ => ()
+    }
+  }
+  assert_true(has_ref)
+  assert_true(has_note)
 }

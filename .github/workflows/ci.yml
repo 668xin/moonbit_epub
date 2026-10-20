@@ -27,13 +27,13 @@ jobs:
         run: moon update
 
       - name: Check
-        run: moon check --target js
+        run: moon check --target wasm-gc
 
       - name: Build
-        run: moon build --target js
+        run: moon build --target wasm-gc
 
       - name: Test
-        run: moon test --target js
+        run: moon test --target wasm-gc
 
       - name: Format check
         run: moon fmt --check
@@ -52,11 +52,11 @@ jobs:
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Build release artifact
-        run: moon build --target js --release
+        run: moon build --target wasm-gc --release
 
       - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
           name: moon-epub-cli
-          path: _build/js/release/build/src/cli/
+          path: _build/wasm-gc/release/build/src/cli/
           if-no-files-found: warn
