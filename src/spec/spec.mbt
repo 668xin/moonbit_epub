@@ -380,23 +380,49 @@ pub let default_fonts_dir : String = "fonts"
 ///|
 /// 取路径中最后一个 `.` 之后的扩展名（不含点，统一小写）。
 ///
-/// 无扩展名时返回空串。
+/// 忽略查询串与片段（`?`、`#` 起），同时识别 `/` 与 `\` 作为目录分隔符；
+/// 隐藏文件、无扩展名或点号后为空时返回空串。
 pub fn extension_of(path : String) -> String {
-  let base = path_basename(path)
-  match base.rev_find(".") {
-    Some(i) => {
-      let (_, tail) = base.split_at(i + 1)
-      tail.to_owned().to_lower()
+  let chars = path.to_array()
+  let n = chars.length()
+  let mut seg_start = 0
+  let mut dot = -1
+  let mut end = n
+  let mut i = 0
+  while i < n {
+    let c = chars[i]
+    if c == '?' || c == '#' {
+      end = i
+      break
+    } else if c == '/' || c == '\\' {
+      seg_start = i + 1
+      dot = -1
+    } else if c == '.' {
+      dot = i
     }
-    None => ""
+    i += 1
   }
+  if dot <= seg_start {
+    return ""
+  }
+  let start = dot + 1
+  let out : Array[Char] = []
+  for j in start..<end {
+    let v = chars[j].to_int()
+    if v >= 65 && v <= 90 {
+      out.push(Int::unsafe_to_char(v + 32))
+    } else {
+      out.push(chars[j])
+    }
+  }
+  String::from_array(out)
 }
 
 ///|
 /// 按扩展名推断媒体类型，未识别时回退到 `application/octet-stream`。
 pub fn media_type_of_path(path : String) -> String {
   match extension_of(path) {
-    "xhtml" | "html" | "htm" => mt_xhtml
+    "xhtml" | "xht" | "html" | "htm" => mt_xhtml
     "ncx" => mt_ncx
     "opf" => mt_opf
     "css" => mt_css
@@ -404,12 +430,12 @@ pub fn media_type_of_path(path : String) -> String {
     "xml" => mt_xml
     "smil" => mt_smil
     "png" => mt_png
-    "jpg" | "jpeg" => mt_jpeg
+    "jpg" | "jpeg" | "jpe" => mt_jpeg
     "gif" => mt_gif
     "svg" => mt_svg
     "webp" => mt_webp
     "mp3" => mt_mp3
-    "m4a" | "mp4" => mt_mp4
+    "m4a" | "mp4" | "m4b" => mt_mp4
     "ogg" | "oga" => mt_ogg
     "ttf" => mt_ttf
     "otf" => mt_otf

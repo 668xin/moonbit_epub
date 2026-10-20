@@ -154,8 +154,8 @@ test "stylesheet_resource: 自定义样式位于内置之后" {
 
 ///|
 test "mime_type_of: 扩展名映射覆盖" {
-  assert_eq(mime_type_of("a.htm"), "text/html")
-  assert_eq(mime_type_of("a.html"), "text/html")
+  assert_eq(mime_type_of("a.htm"), @spec.mt_xhtml)
+  assert_eq(mime_type_of("a.html"), @spec.mt_xhtml)
   assert_eq(mime_type_of("a.xht"), @spec.mt_xhtml)
   assert_eq(mime_type_of("a.xml"), @spec.mt_xml)
   assert_eq(mime_type_of("a.opf"), @spec.mt_opf)

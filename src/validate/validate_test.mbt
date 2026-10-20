@@ -443,6 +443,15 @@ test "validate_package: 非 ZIP 数据" {
 }
 
 ///|
+test "validate_resources: SMIL 与 XHT 媒体类型一致" {
+  let report = validate_resources([
+    @model.Resource::new("media/ch1.smil", @spec.mt_smil, b"x"),
+    @model.Resource::new("text/ch1.xht", @spec.mt_xhtml, b"x"),
+  ])
+  assert_true(report.is_ok())
+}
+
+///|
 test "validate_manifest: 重复清单 id 触发 OPF-008" {
   let manifest = @model.Manifest::new()
   let nav = @model.ManifestItem::new("nav", "nav.xhtml", @spec.mt_xhtml)

@@ -196,6 +196,9 @@ test "media_type_of_path: 各扩展名与回退" {
   assert_eq(media_type_of_path("a.opf"), mt_opf)
   assert_eq(media_type_of_path("a.mjs"), mt_js)
   assert_eq(media_type_of_path("a.xml"), mt_xml)
+  assert_eq(media_type_of_path("a.m4b"), mt_mp4)
+  assert_eq(media_type_of_path("a.xht"), mt_xhtml)
+  assert_eq(media_type_of_path("a.jpe"), mt_jpeg)
   assert_eq(media_type_of_path("a.smil"), mt_smil)
   assert_eq(media_type_of_path("a.jpeg"), mt_jpeg)
   assert_eq(media_type_of_path("a.gif"), mt_gif)
@@ -216,10 +219,19 @@ test "media_type_of_path: 各扩展名与回退" {
 ///|
 test "extension_of: 多点、前导点与无扩展名" {
   assert_eq(extension_of("a.tar.gz"), "gz")
-  assert_eq(extension_of(".gitignore"), "gitignore")
+  assert_eq(extension_of(".gitignore"), "")
   assert_eq(extension_of("a/b/c"), "")
   assert_eq(extension_of(""), "")
   assert_eq(extension_of("DIR/File.MP3"), "mp3")
+  assert_eq(media_type_of_path(".gitignore"), mt_octet_stream)
+}
+
+///|
+test "extension_of: 查询串、片段与反斜杠分隔符" {
+  assert_eq(extension_of("a.xhtml?x=1#frag"), "xhtml")
+  assert_eq(extension_of("dir\\sub\\cover.PNG"), "png")
+  assert_eq(extension_of("a/b/logo.svg#icon"), "svg")
+  assert_eq(extension_of("name."), "")
 }
 
 ///|

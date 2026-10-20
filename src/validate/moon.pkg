@@ -1,7 +1,6 @@
 import {
   "668xin/moon_epub/src/spec",
   "668xin/moon_epub/src/model",
-  "668xin/moon_epub/src/assets",
   "668xin/moon_epub/src/zip",
   "moonbitlang/core/debug",
 }

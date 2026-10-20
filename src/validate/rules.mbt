@@ -113,7 +113,7 @@ pub fn validate_resources(resources : Array[@model.Resource]) -> Report {
     if resource.media_type.is_empty() {
       report.error("RES-003", location, "资源缺少媒体类型")
     } else {
-      let inferred = @assets.mime_type_of(resource.href)
+      let inferred = @spec.media_type_of_path(resource.href)
       if inferred != @spec.mt_octet_stream && inferred != resource.media_type {
         report.warning(
           "RES-004",

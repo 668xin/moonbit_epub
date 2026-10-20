@@ -1,5 +1,10 @@
 name: CI
 
+# 固定与本地验证一致的 MoonBit 版本，避免 latest 的格式化规则漂移
+# 导致 `moon fmt --check` 失败。升级工具链时需同步运行 `moon fmt`。
+env:
+  MOONBIT_INSTALL_VERSION: "0.10.14+32f9dd1de-nightly"
+
 on:
   push:
     branches: [main, master]
