@@ -40,12 +40,13 @@ test "render_inspect: 结构树关键字段" {
   assert_true(text.contains("语言：zh-CN"))
   assert_true(text.contains("章节（1）："))
   assert_true(text.contains("• 前言 [ch1]"))
+  assert_true(text.contains("epubcfi(/6/2)"))
   assert_true(text.contains("清单条目：3"))
 }
 
 ///|
 test "join_names: 顿号连接示例名" {
-  assert_eq(join_names(), "minimal、multi-chapter、styled")
+  assert_eq(join_names(), "minimal、multi-chapter、styled、media")
 }
 
 ///|
@@ -107,9 +108,36 @@ test "render_inspect: multi 嵌套章节缩进" {
 }
 
 ///|
+test "render_inspect: media 示例含音频与 CFI" {
+  let text = render_inspect(@examples.media())
+  assert_true(text.contains("书籍：有声示例"))
+  assert_true(text.contains("资源（1）："))
+  assert_true(text.contains("audio/ch1.mp3"))
+  assert_true(text.contains("epubcfi(/6/2)"))
+  assert_true(text.contains("清单条目：4"))
+}
+
+///|
+test "package_options_for: media 示例登记 SMIL" {
+  let options = package_options_for("media", @examples.media())
+  assert_eq(options.media_overlays.length(), 1)
+  assert_eq(options.media_overlays[0].href, "text/ch1.smil")
+  assert_eq(options.media_overlays[0].content_href, "text/ch1.xhtml")
+}
+
+///|
 test "join_names: 无尾随或前导分隔符" {
   let s = join_names()
-  assert_eq(s, "minimal、multi-chapter、styled")
+  assert_eq(s, "minimal、multi-chapter、styled、media")
   assert_false(s.has_suffix("、"))
   assert_false(s.has_prefix("、"))
+}
+
+///|
+test "exit_code_of: 错误报告返回非零" {
+  let ok = @validate.Report::new()
+  assert_eq(exit_code_of(ok), 0)
+  let failed = @validate.Report::new()
+  failed.error("TEST-001", "cli", "失败")
+  assert_eq(exit_code_of(failed), 1)
 }

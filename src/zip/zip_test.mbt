@@ -444,3 +444,18 @@ test "entries: 非法数据返回空数组" {
   assert_eq(entries(b"").length(), 0)
   assert_eq(entries(b"PK").length(), 0)
 }
+
+///|
+test "read_stored: 读取存储条目并拒绝压缩/缺失条目" {
+  let zip = ZipWriter::new()
+  zip.add_stored("mimetype", b"application/epub+zip")
+  zip.add_deflated("a.txt", b"hello hello hello hello")
+  let data = zip.finish()
+  assert_eq(
+    @utf8.decode_lossy(read_stored(data, "mimetype").unwrap()),
+    "application/epub+zip",
+  )
+  assert_true(read_stored(data, "a.txt") is None)
+  assert_true(read_stored(data, "missing") is None)
+  assert_true(read_stored(b"not a zip", "mimetype") is None)
+}

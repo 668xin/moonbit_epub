@@ -10,12 +10,14 @@
 /// 脚注编号表：记录脚注 id 的首次出现顺序，编号自 1 起。
 pub struct NoteIndex {
   order : Array[String]
+  // 每个脚注 id 已生成的引用次数，用于保证同一脚注多次引用时 id 唯一
+  priv ref_counts : Map[String, Int]
 }
 
 ///|
 /// 构造空的编号表。
 pub fn NoteIndex::empty() -> NoteIndex {
-  { order: [], }
+  { order: [], ref_counts: Map([]), }
 }
 
 ///|
@@ -108,6 +110,9 @@ pub fn NoteIndex::from_inlines(inlines : Array[@model.Inline]) -> NoteIndex {
 
 ///|
 /// 渲染脚注引用为带编号的语义化链接，`id` 用于回跳至引用处。
+///
+/// 同一脚注可能被多次引用，除首次使用 `ref-<id>` 外，后续引用依次使用
+/// `ref-<id>-2`、`ref-<id>-3`，避免文档内出现重复的 XML ID。
 fn write_footnote_ref(
   out : Array[Char],
   id : String,
@@ -118,10 +123,20 @@ fn write_footnote_ref(
     Some(n) => "\{n}"
     None => id
   }
+  let occurrence = match notes.ref_counts.get(id) {
+    Some(n) => n + 1
+    None => 1
+  }
+  notes.ref_counts.set(id, occurrence)
+  let ref_id = if occurrence == 1 {
+    "ref-" + attr
+  } else {
+    "ref-" + attr + "-" + occurrence.to_string()
+  }
   out.push_iter("<a href=\"#".iter())
   out.push_iter(attr.iter())
-  out.push_iter("\" id=\"ref-".iter())
-  out.push_iter(attr.iter())
+  out.push_iter("\" id=\"".iter())
+  out.push_iter(ref_id.iter())
   out.push_iter(
     "\" class=\"footnote-ref\" epub:type=\"noteref\" role=\"doc-noteref\"><sup>".iter(),
   )

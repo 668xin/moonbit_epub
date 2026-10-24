@@ -60,6 +60,8 @@ pub let default_fonts_dir : String
 
 pub let default_images_dir : String
 
+pub let default_modified : String
+
 pub let default_nav_filename : String
 
 pub let default_ncx_filename : String
@@ -127,6 +129,8 @@ pub let hazard_motion : String
 pub let hazard_none : String
 
 pub let hazard_sound : String
+
+pub fn is_safe_relative_path(String) -> Bool
 
 pub fn is_valid_id(String) -> Bool
 
@@ -261,6 +265,8 @@ pub let prop_accessibility_summary : String
 pub let prop_conforms_to : String
 
 pub let property_modified : String
+
+pub fn safe_path_segment(String) -> String
 
 pub let scheme_marc_relators : String
 

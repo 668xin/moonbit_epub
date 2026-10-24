@@ -105,6 +105,12 @@ pub fn validate_resources(resources : Array[@model.Resource]) -> Report {
       report.error("RES-001", location, "资源 href 为空")
       continue
     }
+    let href = @model.resource_href(resource)
+    if !@spec.is_safe_relative_path(href) {
+      report.error(
+        "RES-006", location, "资源 href 不是安全的容器内相对路径",
+      )
+    }
     if seen.contains(resource.href) {
       report.error("RES-002", location, "资源 href 重复")
     } else {
@@ -172,6 +178,10 @@ pub fn validate_manifest(manifest : @model.Manifest) -> Report {
     }
     if item.href.is_empty() {
       report.error("OPF-004", location, "清单条目 href 为空")
+    } else if !@spec.is_safe_relative_path(item.href) {
+      report.error(
+        "OPF-009", location, "清单条目 href 不是安全的容器内相对路径",
+      )
     } else if seen_href.contains(item.href) {
       report.warning("OPF-006", location, "清单内 href 重复")
     } else {
@@ -185,6 +195,22 @@ pub fn validate_manifest(manifest : @model.Manifest) -> Report {
       report.warning(
         "OPF-007", location, "导航文档条目 media-type 应为 XHTML",
       )
+    }
+    match item.media_overlay {
+      Some(media_overlay) =>
+        match manifest.find_by_id(media_overlay) {
+          Some(target) =>
+            if target.media_type != @spec.mt_smil {
+              report.warning(
+                "OPF-011", location, "media-overlay 未指向 SMIL 文档",
+              )
+            }
+          None =>
+            report.error(
+              "OPF-010", location, "media-overlay 引用了不存在的清单 id",
+            )
+        }
+      None => ()
     }
   }
   report
@@ -267,11 +293,12 @@ pub fn validate_reachability(
     }
   }
   for resource in resources {
-    if !resource.href.is_empty() && !manifest.has_href(resource.href) {
+    let href = @model.resource_href(resource)
+    if !href.is_empty() && !manifest.has_href(href) {
       report.error(
         "RCH-002",
         "resource#\{resource.href}",
-        "资源 \{resource.href} 未登记于清单",
+        "资源 \{href} 未登记于清单",
       )
     }
   }
@@ -330,6 +357,13 @@ pub fn validate_container(entries : Array[ContainerEntry]) -> Report {
   let mut has_opf = false
   let seen : Map[String, Bool] = Map([])
   for entry in entries {
+    if !@spec.is_safe_relative_path(entry.path) {
+      report.error(
+        "CON-008",
+        "container#\{entry.path}",
+        "容器条目路径不是安全的相对路径",
+      )
+    }
     if entry.path == @spec.ocf_mimetype {
       mimetype = Some(entry)
     }
@@ -382,12 +416,25 @@ pub fn validate_package(data : Bytes) -> Report {
   for entry in entries {
     container_entries.push(ContainerEntry::new(entry.path, entry.stored))
   }
-  validate_container(container_entries)
+  let report = validate_container(container_entries)
+  match @zip.read_stored(data, @spec.ocf_mimetype) {
+    Some(content) =>
+      if @utf8.decode_lossy(content) != @spec.mt_epub {
+        report.error(
+          "CON-007", "container#mimetype", "mimetype 内容不是 application/epub+zip",
+        )
+      }
+    None => ()
+  }
+  report
 }
 
 ///|
-/// 对书籍模型做完整的模型级校验：元数据、章节、资源、清单、阅读顺序与可达性。
-pub fn validate_book(book : @model.Book) -> Report {
+/// 对已装配的书籍模型做原始校验，不自动补全清单与阅读顺序。
+///
+/// 适合需要显式检查自定义 `manifest` / `spine` 的调用方；若希望校验
+/// 与默认打包一致的装配结果，请使用 `validate_book`。
+pub fn validate_book_raw(book : @model.Book) -> Report {
   let report = Report::new()
   report.merge(validate_metadata(book.metadata))
   report.merge(validate_chapters(book.chapters))
@@ -397,5 +444,158 @@ pub fn validate_book(book : @model.Book) -> Report {
   report.merge(
     validate_reachability(book.chapters, book.resources, book.manifest),
   )
+  report
+}
+
+///|
+/// 对书籍模型做完整的模型级校验：先按默认 nav / NCX 装配清单与阅读顺序
+/// （与 `package_book` 的默认装配一致），再执行元数据、章节、资源、清单、
+/// 阅读顺序与可达性检查。
+pub fn validate_book(book : @model.Book) -> Report {
+  validate_book_raw(@model.assemble_book(book))
+}
+
+// ---------------------------------------------------------------------------
+// 生成文档一致性（OPF / nav / NCX）
+// ---------------------------------------------------------------------------
+
+///|
+/// 统计 `needle` 在 `text` 中出现的次数。
+fn count_occurrences(text : String, needle : String) -> Int {
+  if needle.is_empty() {
+    return 0
+  }
+  text.split(needle).length() - 1
+}
+
+///|
+/// 检查实际生成的 OPF / nav / NCX 文本与装配模型是否一致。
+///
+/// 覆盖必需元数据、清单条目、阅读顺序条目、导航目标与保留前缀声明，
+/// 用于发现生成层与模型层不一致的问题。完整的 XML 语义校验仍由外部
+/// EPUBCheck 承担。
+pub fn validate_documents(
+  metadata : @model.Metadata,
+  manifest : @model.Manifest,
+  spine : @model.Spine,
+  opf : String,
+  nav : String,
+  ncx : String,
+) -> Report {
+  let report = Report::new()
+  // 必需元数据
+  let title = @spec.xml_escape(metadata.title)
+  if !opf.contains("<dc:title>\{title}</dc:title>") {
+    report.error(
+      "OPF-012", "package/metadata/dc:title", "生成 OPF 缺少标题",
+    )
+  }
+  let language = @spec.xml_escape(metadata.language)
+  if !opf.contains("<dc:language>\{language}</dc:language>") {
+    report.error(
+      "OPF-012", "package/metadata/dc:language", "生成 OPF 缺少语言",
+    )
+  }
+  let identifier = @spec.xml_escape(metadata.identifier)
+  if !opf.contains("\{identifier}</dc:identifier>") {
+    report.error(
+      "OPF-012", "package/metadata/dc:identifier", "生成 OPF 缺少标识符",
+    )
+  }
+  match metadata.modified {
+    Some(modified) => {
+      let value = @spec.xml_escape(modified)
+      if !opf.contains(
+          "<meta property=\"dcterms:modified\">" + value + "</meta>",
+        ) {
+        report.error(
+          "OPF-012", "package/metadata/meta", "生成 OPF 缺少 dcterms:modified",
+        )
+      }
+    }
+    None =>
+      report.error(
+        "OPF-012", "package/metadata/meta", "生成 OPF 缺少 dcterms:modified",
+      )
+  }
+  // 清单条目数量与逐条属性
+  let item_count = count_occurrences(opf, "<item ")
+  if item_count != manifest.length() {
+    report.error(
+      "OPF-013", "package/manifest", "生成 OPF 清单条目数量与模型不一致",
+    )
+  }
+  for item in manifest.items {
+    let id = @spec.xml_escape_attr(item.id)
+    let href = @spec.xml_escape_attr(item.href)
+    let media_type = @spec.xml_escape_attr(item.media_type)
+    let needle = "<item id=\"" +
+      id +
+      "\" href=\"" +
+      href +
+      "\" media-type=\"" +
+      media_type +
+      "\""
+    if !opf.contains(needle) {
+      report.error(
+        "OPF-013",
+        "package/manifest/item#\{item.id}",
+        "生成 OPF 缺少清单条目",
+      )
+    }
+  }
+  // 阅读顺序条目
+  let itemref_count = count_occurrences(opf, "<itemref ")
+  if itemref_count != spine.items.length() {
+    report.error(
+      "SPN-006", "package/spine", "生成 OPF 阅读顺序条目数量与模型不一致",
+    )
+  }
+  for item in spine.items {
+    let idref = @spec.xml_escape_attr(item.idref)
+    let needle = "<itemref idref=\"" + idref + "\""
+    if !opf.contains(needle) {
+      report.error(
+        "SPN-006",
+        "package/spine/itemref#\{item.idref}",
+        "生成 OPF 缺少阅读顺序条目",
+      )
+    }
+  }
+  // 导航目标：仅检查参与线性阅读顺序的内容文档，避免把非章节
+  // XHTML 资源误判为缺失导航项。
+  for spine_item in spine.items {
+    if !spine_item.linear {
+      continue
+    }
+    match manifest.find_by_id(spine_item.idref) {
+      Some(item) =>
+        if item.media_type == @spec.mt_xhtml &&
+          !item.has_property(@spec.epub_property_nav) {
+          let href = @spec.xml_escape_attr(item.href)
+          if !nav.contains("href=\"\{href}\"") {
+            report.error(
+              "RCH-003",
+              "nav#\{item.id}",
+              "生成 nav.xhtml 缺少章节链接",
+            )
+          }
+          if !ncx.contains("src=\"\{href}\"") {
+            report.error(
+              "RCH-003",
+              "ncx#\{item.id}",
+              "生成 toc.ncx 缺少章节链接",
+            )
+          }
+        }
+      None => ()
+    }
+  }
+  // marc 等保留前缀不应重复声明
+  if opf.contains("prefix=\"marc:") {
+    report.warning(
+      "OPF-014", "package", "生成 OPF 重复声明了保留前缀 marc",
+    )
+  }
   report
 }

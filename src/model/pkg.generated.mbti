@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn assemble_book(Book, nav_filename? : String, ncx_filename? : String) -> Book
+
 pub fn chapter_depth(Array[Chapter]) -> Int
 
 pub fn chapter_href(Chapter) -> String
@@ -17,6 +19,8 @@ pub fn find_chapter(Array[Chapter], String) -> Chapter?
 pub fn flatten_chapters(Array[Chapter]) -> Array[Chapter]
 
 pub fn plain_text(Array[Inline]) -> String
+
+pub fn resource_href(Resource) -> String
 
 pub fn resource_id(Resource) -> String
 
@@ -62,6 +66,7 @@ pub fn Book::chapter_count(Self) -> Int
 pub fn Book::find_chapter(Self, String) -> Chapter?
 pub fn Book::has_unique_chapter_ids(Self) -> Bool
 pub fn Book::new(Metadata) -> Self
+pub fn Book::with_metadata(Self, Metadata) -> Self
 
 pub struct Chapter {
   id : String
@@ -132,6 +137,7 @@ pub struct Meta {
 pub fn Meta::named(String, String) -> Self
 pub fn Meta::of_property(String) -> Self
 pub fn Meta::of_property_content(String, String) -> Self
+pub fn Meta::of_property_content_refines(String, String, String) -> Self
 pub fn Meta::refining(String, String) -> Self
 
 pub struct Metadata {
@@ -167,6 +173,9 @@ pub fn Metadata::set_language(Self, String) -> Unit
 pub fn Metadata::set_modified(Self, String) -> Unit
 pub fn Metadata::set_rights(Self, String) -> Unit
 pub fn Metadata::set_title(Self, String) -> Unit
+pub fn Metadata::with_language(Self, String) -> Self
+pub fn Metadata::with_metas_appended(Self, Array[Meta]) -> Self
+pub fn Metadata::with_modified(Self, String) -> Self
 
 pub struct Resource {
   href : String

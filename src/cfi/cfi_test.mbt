@@ -190,3 +190,15 @@ test "parse_cfi: 更多非法输入返回 None" {
   assert_true(parse_cfi("epubcfi(/6/4]/2)") is None)
   assert_true(parse_cfi("epubcfi(/6!/)") is None)
 }
+
+///|
+test "chapter_cfi: 按阅读顺序定位章节文档" {
+  let book = @model.Book::new(@model.Metadata::new("T", "en", "urn:uuid:cfi"))
+  book.add_chapter(@model.Chapter::new("ch1", "第一章"))
+  book.add_chapter(@model.Chapter::new("ch2", "第二章"))
+  book.add_spine_item(@model.SpineItem::new("ch1"))
+  book.add_spine_item(@model.SpineItem::new("ch2"))
+  assert_eq(chapter_cfi(book, "ch1").unwrap().render(), "epubcfi(/6/2)")
+  assert_eq(chapter_cfi(book, "ch2").unwrap().render(), "epubcfi(/6/4)")
+  assert_true(chapter_cfi(book, "missing") is None)
+}

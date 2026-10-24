@@ -510,7 +510,6 @@ pub fn render_package_from(
   out.push_iter("<package".iter())
   write_attr(out, "xmlns", @spec.ns_opf)
   write_attr(out, "xmlns:dc", @spec.ns_dc)
-  write_attr(out, "prefix", "\{@spec.prefix_marc}: \{@spec.ns_marc_relators}")
   write_attr(out, "version", options.version)
   write_attr(out, "unique-identifier", unique_id)
   if !metadata.language.is_empty() {

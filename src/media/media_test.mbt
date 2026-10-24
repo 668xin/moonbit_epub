@@ -90,11 +90,9 @@ test "render_smil: 文档结构" {
 }
 
 ///|
-test "render_smil: 语言声明" {
-  let options = SmilOptions::new()
-  options.set_language("zh-CN")
-  let smil = render_smil(sample_overlay(), options)
-  assert_true(smil.contains("xml:lang=\"zh-CN\""))
+test "render_smil: 不输出 xml:lang（SMIL 根元素不接受）" {
+  let smil = render_smil(sample_overlay(), SmilOptions::new())
+  assert_false(smil.contains("xml:lang"))
 }
 
 ///|

@@ -358,6 +358,12 @@ pub let dc_elements : Array[String] = [
 pub let property_modified : String = "dcterms:modified"
 
 ///|
+/// 未显式设置 `dcterms:modified` 时使用的确定性默认时间戳。
+///
+/// 固定值使相同输入产生逐字节一致的产物，同时满足 EPUB 3 对该元数据的必需性。
+pub let default_modified : String = "1980-01-01T00:00:00Z"
+
+///|
 /// 唯一标识符前缀：基于内容的 UUID 派生的 URN 形式。
 pub let urn_uuid_prefix : String = "urn:uuid:"
 

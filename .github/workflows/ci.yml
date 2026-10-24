@@ -43,6 +43,21 @@ jobs:
       - name: Format check
         run: moon fmt --check
 
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: EPUBCheck
+        run: |
+          curl -sSL --retry 3 -o epubcheck.zip https://github.com/w3c/epubcheck/releases/download/v5.1.0/epubcheck-5.1.0.zip
+          unzip -q epubcheck.zip
+          for example in minimal multi-chapter styled media; do
+            moon run src/cli --target wasm-gc -- build "$example" 2>/dev/null | base64 -d > "$example.epub"
+            java -jar epubcheck-5.1.0/epubcheck.jar --failonwarnings "$example.epub"
+          done
+
   release-build:
     runs-on: ubuntu-latest
     needs: check-build-test

@@ -2,10 +2,13 @@
 package "668xin/moon_epub/src/cfi"
 
 import {
+  "668xin/moon_epub/src/model",
   "moonbitlang/core/debug",
 }
 
 // Values
+pub fn chapter_cfi(@model.Book, String) -> Cfi?
+
 pub fn parse_cfi(String) -> Cfi?
 
 // Errors

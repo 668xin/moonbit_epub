@@ -21,6 +21,7 @@ pub fn render_inlines(Array[@model.Inline]) -> String
 // Types and methods
 pub struct NoteIndex {
   order : Array[String]
+  // private fields
 }
 pub fn NoteIndex::empty() -> Self
 pub fn NoteIndex::from_blocks(Array[@model.Block]) -> Self

@@ -8,6 +8,10 @@ import {
 // Values
 pub fn by_name(String) -> @model.Book?
 
+pub fn media() -> @model.Book
+
+pub fn media_smil() -> String
+
 pub fn minimal() -> @model.Book
 
 pub fn multi_chapter() -> @model.Book

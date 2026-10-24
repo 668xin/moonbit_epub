@@ -7,6 +7,7 @@ import {
   "668xin/moon_epub/src/ocf",
   "668xin/moon_epub/src/validate",
   "668xin/moon_epub/src/examples",
+  "668xin/moon_epub/src/cfi",
 }
 
 pkgtype(kind: "executable")

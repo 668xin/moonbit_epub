@@ -499,3 +499,125 @@ test "Book: 元数据透传与清单 / 阅读顺序聚合" {
   book.spine.set_toc("ncx")
   assert_eq(book.spine.toc, Some("ncx"))
 }
+
+// ---------------------------------------------------------------------------
+// 统一装配
+// ---------------------------------------------------------------------------
+
+///|
+test "assemble_book: 自动补齐清单与阅读顺序且不修改原书" {
+  let book = Book::new(Metadata::new("T", "en", "urn:uuid:assemble"))
+  let chapter = Chapter::new("ch1", "第一章")
+  chapter.add_child(Chapter::new("ch1-1", "第一节"))
+  book.add_chapter(chapter)
+  book.add_resource(Resource::css("styles/a.css", "body {}"))
+  let assembled = assemble_book(book)
+  // nav + ncx + 两个章节 + 样式表
+  assert_eq(assembled.manifest.length(), 5)
+  assert_true(assembled.manifest.has_id(@spec.manifest_id_nav))
+  assert_true(assembled.manifest.has_id(@spec.manifest_id_ncx))
+  assert_true(assembled.manifest.has_href("text/ch1.xhtml"))
+  assert_true(assembled.manifest.has_href("text/ch1-1.xhtml"))
+  assert_true(assembled.manifest.has_href("styles/a.css"))
+  assert_eq(assembled.spine.idrefs(), ["ch1", "ch1-1"])
+  assert_eq(assembled.spine.toc, Some(@spec.manifest_id_ncx))
+  // 原书保持不变
+  assert_eq(book.manifest.length(), 0)
+  assert_eq(book.spine.items.length(), 0)
+}
+
+///|
+test "assemble_book: 缺省 modified 注入确定性默认值" {
+  let book = Book::new(Metadata::new("T", "en", "urn:uuid:modified"))
+  book.add_chapter(Chapter::new("ch1", "C"))
+  let assembled = assemble_book(book)
+  assert_eq(assembled.metadata.modified, Some(@spec.default_modified))
+}
+
+///|
+test "assemble_book: 已有 modified 不被覆盖" {
+  let metadata = Metadata::new("T", "en", "urn:uuid:modified2")
+  metadata.set_modified("2026-10-09T00:00:00Z")
+  let book = Book::new(metadata)
+  book.add_chapter(Chapter::new("ch1", "C"))
+  let assembled = assemble_book(book)
+  assert_eq(assembled.metadata.modified, Some("2026-10-09T00:00:00Z"))
+}
+
+///|
+test "assemble_book: 继承清单定制、导航文件名与自定义阅读顺序" {
+  let book = Book::new(Metadata::new("T", "en", "urn:uuid:custom"))
+  book.add_chapter(Chapter::new("ch1", "第一章"))
+  book.add_chapter(Chapter::new("ch2", "第二章"))
+  let nav = ManifestItem::new(
+    @spec.manifest_id_nav, "custom-nav.xhtml", @spec.mt_xhtml,
+  )
+  nav.add_property(@spec.epub_property_nav)
+  nav.add_property("scripted")
+  let _ = book.add_manifest_item(nav)
+  let chapter_item = ManifestItem::new("ch1", "text/ch1.xhtml", @spec.mt_xhtml)
+  chapter_item.set_fallback("fallback")
+  chapter_item.set_media_overlay("mo")
+  let _ = book.add_manifest_item(chapter_item)
+  book.add_spine_item(SpineItem::non_linear("ch1"))
+  book.spine.set_toc(@spec.manifest_id_ncx)
+  book.spine.set_page_progression_direction("rtl")
+  let assembled = assemble_book(book, nav_filename="custom-nav.xhtml")
+  let nav_item = assembled.manifest.find_by_id(@spec.manifest_id_nav).unwrap()
+  assert_eq(nav_item.href, "custom-nav.xhtml")
+  assert_true(nav_item.has_property("scripted"))
+  let merged = assembled.manifest.find_by_id("ch1").unwrap()
+  assert_eq(merged.fallback, Some("fallback"))
+  assert_eq(merged.media_overlay, Some("mo"))
+  assert_eq(assembled.spine.items.length(), 1)
+  assert_false(assembled.spine.items[0].linear)
+  assert_eq(assembled.spine.toc, Some(@spec.manifest_id_ncx))
+  assert_eq(assembled.spine.page_progression_direction, Some("rtl"))
+}
+
+///|
+test "assemble_book: 资源 properties 透传到清单并去重" {
+  let book = Book::new(Metadata::new("T", "en", "urn:uuid:props"))
+  book.add_chapter(Chapter::new("ch1", "C"))
+  let resource = Resource::new("images/cover.png", @spec.mt_png, Bytes::new(1))
+  resource.properties.push("cover-image")
+  resource.properties.push("cover-image")
+  book.add_resource(resource)
+  let assembled = assemble_book(book)
+  let item = assembled.manifest.find_by_href("images/cover.png").unwrap()
+  assert_true(item.has_property("cover-image"))
+  assert_eq(item.properties.length(), 1)
+}
+
+///|
+test "assemble_book: 空 spine 仍保留翻页方向" {
+  let book = Book::new(Metadata::new("T", "en", "urn:uuid:rtl"))
+  book.add_chapter(Chapter::new("ch1", "C"))
+  book.spine.set_page_progression_direction("rtl")
+  let assembled = assemble_book(book)
+  assert_eq(assembled.spine.page_progression_direction, Some("rtl"))
+}
+
+///|
+test "chapter_href / resource_href: 路径段与分隔符规范化" {
+  assert_eq(chapter_href(Chapter::new("../evil", "T")), "text/..-evil.xhtml")
+  assert_eq(chapter_href(Chapter::new("a/b", "T")), "text/a-b.xhtml")
+  let resource = Resource::new("images\\cover.png", @spec.mt_png, Bytes::new(1))
+  assert_eq(resource_href(resource), "images/cover.png")
+  assert_eq(resource_id(resource), "images-cover.png")
+}
+
+///|
+test "Metadata: with_language / with_modified 保留其他字段" {
+  let metadata = Metadata::new("T", "zh-CN", "urn:uuid:m")
+  metadata.set_modified("2026-10-09T00:00:00Z")
+  metadata.add_creator(Contributor::new("作者", role="aut"))
+  let english = metadata.with_language("en")
+  assert_eq(english.language, "en")
+  assert_eq(english.title, "T")
+  assert_eq(english.modified, Some("2026-10-09T00:00:00Z"))
+  assert_eq(english.creator_names(), ["作者"])
+  let updated = metadata.with_modified("2030-01-01T00:00:00Z")
+  assert_eq(updated.language, "zh-CN")
+  assert_eq(updated.modified, Some("2030-01-01T00:00:00Z"))
+}

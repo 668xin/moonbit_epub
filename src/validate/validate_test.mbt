@@ -194,6 +194,17 @@ test "validate_container: 空容器" {
 }
 
 ///|
+test "validate_container: 不安全条目路径触发 CON-008" {
+  let report = validate_container([
+    ContainerEntry::stored("mimetype"),
+    ContainerEntry::deflated("../evil.txt"),
+    ContainerEntry::deflated("META-INF/container.xml"),
+    ContainerEntry::deflated("OEBPS/content.opf"),
+  ])
+  assert_true(has_code(report, "CON-008"))
+}
+
+///|
 test "validate_book: 完整书籍通过" {
   let report = validate_book(valid_book())
   assert_true(report.is_ok())
@@ -201,11 +212,24 @@ test "validate_book: 完整书籍通过" {
 }
 
 ///|
-test "validate_book: 章节未登记于清单" {
+test "validate_book: 手工构造书籍自动装配后通过" {
+  let metadata = @model.Metadata::new("手工书", "zh-CN", "urn:uuid:manual")
+  let book = @model.Book::new(metadata)
+  book.add_chapter(@model.Chapter::new("ch1", "第一章"))
+  let report = validate_book(book)
+  assert_true(report.is_ok())
+  assert_eq(report.error_count(), 0)
+  assert_false(has_code(report, "MET-004"))
+  // 原始模型尚未装配清单与阅读顺序，raw 校验仍会报缺陷
+  assert_false(validate_book_raw(book).is_ok())
+}
+
+///|
+test "validate_book_raw: 章节未登记于清单" {
   let book = valid_book()
   // 追加一个未登记于清单的章节
   book.add_chapter(@model.Chapter::new("ch3", "第三章"))
-  let report = validate_book(book)
+  let report = validate_book_raw(book)
   assert_true(has_code(report, "RCH-001"))
   assert_false(report.is_ok())
 }
@@ -356,7 +380,7 @@ test "validate_container: 压缩 mimetype 触发 CON-003" {
 }
 
 ///|
-test "validate_book: 违规书籍串联多规则" {
+test "validate_book_raw: 违规书籍串联多规则" {
   let metadata = @model.Metadata::new("缺陷书", "zh-CN", "urn:uuid:bad")
   metadata.set_modified("2026-10-09T00:00:00Z")
   metadata.add_creator(@model.Contributor::new("作者"))
@@ -367,7 +391,7 @@ test "validate_book: 违规书籍串联多规则" {
     @model.ManifestItem::new("style", "styles/style.css", @spec.mt_css),
   )
   book.add_spine_item(@model.SpineItem::new("missing"))
-  let report = validate_book(book)
+  let report = validate_book_raw(book)
   assert_true(has_code(report, "OPF-002"))
   assert_true(has_code(report, "SPN-002"))
   assert_true(has_code(report, "RCH-001"))
@@ -384,9 +408,9 @@ test "validate_book: 重复章节 id 触发 CHP-003" {
 }
 
 ///|
-test "validate_book: 空书籍触发基础缺陷" {
+test "validate_book_raw: 空书籍触发基础缺陷" {
   let book = @model.Book::new(@model.Metadata::new("", "", ""))
-  let report = validate_book(book)
+  let report = validate_book_raw(book)
   assert_true(has_code(report, "MET-001"))
   assert_true(has_code(report, "CHP-005"))
   assert_true(has_code(report, "OPF-001"))
@@ -443,6 +467,17 @@ test "validate_package: 非 ZIP 数据" {
 }
 
 ///|
+test "validate_package: mimetype 内容错误触发 CON-007" {
+  let zip = @zip.ZipWriter::new()
+  zip.add_stored("mimetype", text_bytes("text/plain"))
+  zip.add_deflated("META-INF/container.xml", text_bytes("<container/>"))
+  zip.add_deflated("OEBPS/content.opf", text_bytes("<package/>"))
+  let report = validate_package(zip.finish())
+  assert_true(has_code(report, "CON-007"))
+  assert_false(report.is_ok())
+}
+
+///|
 test "validate_resources: SMIL 与 XHT 媒体类型一致" {
   let report = validate_resources([
     @model.Resource::new("media/ch1.smil", @spec.mt_smil, b"x"),
@@ -462,4 +497,119 @@ test "validate_manifest: 重复清单 id 触发 OPF-008" {
   )
   let report = validate_manifest(manifest)
   assert_true(has_code(report, "OPF-008"))
+}
+
+///|
+test "validate_resources: 不安全路径触发 RES-006" {
+  let report = validate_resources([
+    @model.Resource::new("../evil.png", @spec.mt_png, b"x"),
+    @model.Resource::new("C:\\Windows\\x.png", @spec.mt_png, b"x"),
+  ])
+  assert_true(has_code(report, "RES-006"))
+  assert_eq(report.error_count(), 2)
+}
+
+///|
+test "validate_manifest: 不安全 href 触发 OPF-009" {
+  let manifest = @model.Manifest::new()
+  let nav = @model.ManifestItem::new("nav", "nav.xhtml", @spec.mt_xhtml)
+  nav.add_property(@spec.epub_property_nav)
+  let _ = manifest.add(nav)
+  let _ = manifest.add(
+    @model.ManifestItem::new("bad", "../evil.xhtml", @spec.mt_xhtml),
+  )
+  let report = validate_manifest(manifest)
+  assert_true(has_code(report, "OPF-009"))
+}
+
+///|
+test "validate_manifest: media-overlay 引用校验" {
+  let manifest = @model.Manifest::new()
+  let nav = @model.ManifestItem::new("nav", "nav.xhtml", @spec.mt_xhtml)
+  nav.add_property(@spec.epub_property_nav)
+  let _ = manifest.add(nav)
+  let chapter = @model.ManifestItem::new(
+    "ch1", "text/ch1.xhtml", @spec.mt_xhtml,
+  )
+  chapter.set_media_overlay("missing")
+  let _ = manifest.add(chapter)
+  let report = validate_manifest(manifest)
+  assert_true(has_code(report, "OPF-010"))
+  let smil = @model.ManifestItem::new("mo", "text/ch1.smil", @spec.mt_smil)
+  let _ = manifest.add(smil)
+  chapter.set_media_overlay("mo")
+  let ok = validate_manifest(manifest)
+  assert_false(has_code(ok, "OPF-010"))
+  assert_false(has_code(ok, "OPF-011"))
+  chapter.set_media_overlay("nav")
+  let wrong = validate_manifest(manifest)
+  assert_true(has_code(wrong, "OPF-011"))
+}
+
+///|
+test "validate_documents: 生成文档与模型一致时通过" {
+  let metadata = @model.Metadata::new("T", "en", "urn:uuid:doc")
+  metadata.set_modified("2026-10-09T00:00:00Z")
+  let manifest = @model.Manifest::new()
+  let nav = @model.ManifestItem::new("nav", "nav.xhtml", @spec.mt_xhtml)
+  nav.add_property(@spec.epub_property_nav)
+  let _ = manifest.add(nav)
+  let _ = manifest.add(
+    @model.ManifestItem::new("ch1", "text/ch1.xhtml", @spec.mt_xhtml),
+  )
+  // 非章节 XHTML 资源不在 nav/NCX 中，不应触发 RCH-003
+  let _ = manifest.add(
+    @model.ManifestItem::new("extra", "text/extra.xhtml", @spec.mt_xhtml),
+  )
+  let spine = @model.Spine::new()
+  spine.set_toc(@spec.manifest_id_ncx)
+  spine.add(@model.SpineItem::new("ch1"))
+  let opf =
+    #|<package><metadata><dc:identifier id="pub-id">urn:uuid:doc</dc:identifier><dc:title>T</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-10-09T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="ch1" href="text/ch1.xhtml" media-type="application/xhtml+xml"/><item id="extra" href="text/extra.xhtml" media-type="application/xhtml+xml"/></manifest><spine toc="ncx"><itemref idref="ch1"/></spine></package>
+  let nav_doc =
+    #|<html><body><nav><a href="text/ch1.xhtml">C</a></nav></body></html>
+  let ncx_doc =
+    #|<ncx><navMap><navPoint><content src="text/ch1.xhtml"/></navPoint></navMap></ncx>
+  let report = validate_documents(
+    metadata, manifest, spine, opf, nav_doc, ncx_doc,
+  )
+  assert_true(report.is_ok())
+  assert_eq(report.length(), 0)
+}
+
+///|
+test "validate_documents: 缺失清单/阅读顺序/导航目标时报告" {
+  let metadata = @model.Metadata::new("T", "en", "urn:uuid:doc")
+  metadata.set_modified("2026-10-09T00:00:00Z")
+  let manifest = @model.Manifest::new()
+  let nav = @model.ManifestItem::new("nav", "nav.xhtml", @spec.mt_xhtml)
+  nav.add_property(@spec.epub_property_nav)
+  let _ = manifest.add(nav)
+  let _ = manifest.add(
+    @model.ManifestItem::new("ch1", "text/ch1.xhtml", @spec.mt_xhtml),
+  )
+  let spine = @model.Spine::new()
+  spine.add(@model.SpineItem::new("ch1"))
+  let opf =
+    #|<package><metadata><dc:identifier id="pub-id">urn:uuid:doc</dc:identifier><dc:title>T</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-10-09T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/></manifest><spine toc="ncx"></spine></package>
+  let report = validate_documents(metadata, manifest, spine, opf, "", "")
+  assert_true(has_code(report, "OPF-013"))
+  assert_true(has_code(report, "SPN-006"))
+  assert_true(has_code(report, "RCH-003"))
+  assert_false(report.is_ok())
+}
+
+///|
+test "validate_documents: 保留前缀重复声明触发 OPF-014" {
+  let metadata = @model.Metadata::new("T", "en", "urn:uuid:doc")
+  metadata.set_modified("2026-10-09T00:00:00Z")
+  let manifest = @model.Manifest::new()
+  let nav = @model.ManifestItem::new("nav", "nav.xhtml", @spec.mt_xhtml)
+  nav.add_property(@spec.epub_property_nav)
+  let _ = manifest.add(nav)
+  let spine = @model.Spine::new()
+  let opf =
+    #|<package prefix="marc: http://id.loc.gov/vocabulary/relators/"><metadata><dc:identifier id="pub-id">urn:uuid:doc</dc:identifier><dc:title>T</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-10-09T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/></manifest><spine toc="ncx"></spine></package>
+  let report = validate_documents(metadata, manifest, spine, opf, "", "")
+  assert_true(has_code(report, "OPF-014"))
 }

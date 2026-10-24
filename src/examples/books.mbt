@@ -22,44 +22,6 @@ fn base_metadata(
   metadata
 }
 
-///|
-/// 依据章节树与资源装配清单与阅读顺序，使书籍可直接通过结构校验。
-///
-/// 清单顺序：导航 → NCX → 各章节内容文档 → 各资源；阅读顺序取章节树的
-/// 深度优先展平，并将 `spine@toc` 指向 NCX 条目。
-fn assemble(book : @model.Book) -> Unit {
-  let nav = @model.ManifestItem::new(
-    @spec.manifest_id_nav, @spec.default_nav_filename, @spec.mt_xhtml,
-  )
-  nav.add_property(@spec.epub_property_nav)
-  let _ = book.add_manifest_item(nav)
-  let _ = book.add_manifest_item(
-    @model.ManifestItem::new(
-      @spec.manifest_id_ncx, @spec.default_ncx_filename, @spec.mt_ncx,
-    ),
-  )
-  for chapter in @model.flatten_chapters(book.chapters) {
-    let _ = book.add_manifest_item(
-      @model.ManifestItem::new(
-        chapter.id,
-        @model.chapter_href(chapter),
-        @spec.mt_xhtml,
-      ),
-    )
-    book.add_spine_item(@model.SpineItem::new(chapter.id))
-  }
-  for resource in book.resources {
-    let _ = book.add_manifest_item(
-      @model.ManifestItem::new(
-        @model.resource_id(resource),
-        resource.href,
-        resource.media_type,
-      ),
-    )
-  }
-  book.spine.set_toc(@spec.manifest_id_ncx)
-}
-
 // ---------------------------------------------------------------------------
 // 示例一：最小书籍
 // ---------------------------------------------------------------------------
@@ -79,8 +41,7 @@ pub fn minimal() -> @model.Book {
       @model.Block::paragraph("这是一个最小可用的 EPUB 3 示例。"),
     ]),
   )
-  assemble(book)
-  book
+  @model.assemble_book(book)
 }
 
 // ---------------------------------------------------------------------------
@@ -144,8 +105,7 @@ pub fn multi_chapter() -> @model.Book {
   book.add_resource(
     @assets.base_stylesheet_resource(@spec.default_stylesheet_path),
   )
-  assemble(book)
-  book
+  @model.assemble_book(book)
 }
 
 // ---------------------------------------------------------------------------
@@ -181,8 +141,65 @@ pub fn styled() -> @model.Book {
       "images/cover.svg", @spec.mt_svg, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"600\" height=\"800\" viewBox=\"0 0 600 800\"><rect width=\"600\" height=\"800\" fill=\"#eef\"/><text x=\"300\" y=\"400\" text-anchor=\"middle\" font-size=\"48\" fill=\"#336\">封面</text></svg>",
     ),
   )
-  assemble(book)
-  book
+  @model.assemble_book(book)
+}
+
+// ---------------------------------------------------------------------------
+// 示例四：Media Overlays
+// ---------------------------------------------------------------------------
+
+///|
+/// 构造一帧结构完整的静音 MP3 占位数据
+/// （MPEG-1 Layer III，128 kbps，44.1 kHz，417 字节）。
+fn silent_mp3() -> Bytes {
+  let buf = Buffer()
+  buf.write_byte(0xFFU.to_byte())
+  buf.write_byte(0xFBU.to_byte())
+  buf.write_byte(0x90U.to_byte())
+  buf.write_byte(0x64U.to_byte())
+  for _ in 0..<413 {
+    buf.write_byte(0U.to_byte())
+  }
+  buf.to_bytes()
+}
+
+///|
+/// 有声书示例：单章节正文、一个音频资源，以及对应的 SMIL Media Overlay。
+pub fn media() -> @model.Book {
+  let metadata = base_metadata(
+    "有声示例",
+    "zh-CN",
+    @spec.content_identifier("media"),
+  )
+  @a11y.Accessibility::audio_book().apply_to(metadata)
+  let book = @model.Book::new(metadata)
+  book.add_chapter(
+    @model.Chapter::with_body("ch1", "朗读同步", [
+      @model.Block::heading(1, "朗读同步"),
+      @model.Block::paragraph("这段文字与音频片段同步播放。"),
+    ]),
+  )
+  book.add_resource(
+    @model.Resource::new("audio/ch1.mp3", @spec.mt_mp3, silent_mp3()),
+  )
+  @model.assemble_book(book)
+}
+
+///|
+/// Media Overlay 示例的 SMIL 文本。
+pub fn media_smil() -> String {
+  let overlay = @media.Overlay::new()
+  // SMIL 位于 text/ 下，因此正文与音频使用相对 SMIL 的路径
+  let seq = @media.Seq::new("seq-ch1", "ch1.xhtml")
+  seq.add_par(
+    @media.Par::new(
+      "par-1",
+      "ch1.xhtml",
+      @media.AudioClip::from_millis("../audio/ch1.mp3", 0, 1200),
+    ),
+  )
+  overlay.add_seq(seq)
+  @media.render_smil(overlay, @media.SmilOptions::new())
 }
 
 // ---------------------------------------------------------------------------
@@ -196,6 +213,7 @@ pub fn by_name(name : String) -> @model.Book? {
     "minimal" => Some(minimal())
     "multi-chapter" | "multi" => Some(multi_chapter())
     "styled" => Some(styled())
+    "media" => Some(media())
     _ => None
   }
 }
@@ -203,5 +221,5 @@ pub fn by_name(name : String) -> @model.Book? {
 ///|
 /// 全部示例名称，按推荐展示顺序。
 pub fn names() -> Array[String] {
-  ["minimal", "multi-chapter", "styled"]
+  ["minimal", "multi-chapter", "styled", "media"]
 }

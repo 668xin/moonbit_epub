@@ -97,6 +97,23 @@ pub fn Meta::of_property_content(property : String, content : String) -> Meta {
 }
 
 ///|
+/// 构造带文本内容且细化到指定 id 的 `property` 形态 `meta`。
+pub fn Meta::of_property_content_refines(
+  property : String,
+  refines : String,
+  content : String,
+) -> Meta {
+  {
+    name: None,
+    content: Some(content),
+    property: Some(property),
+    refines: Some(refines),
+    scheme: None,
+    id: None,
+  }
+}
+
+///|
 /// 丛书 / 合集元数据，序列化为 `belongs-to-collection` 相关 `meta`。
 pub struct Series {
   name : String
@@ -263,4 +280,58 @@ pub fn Metadata::set_rights(self : Metadata, rights : String) -> Unit {
 /// 设置 `dcterms:modified` 时间戳。
 pub fn Metadata::set_modified(self : Metadata, modified : String) -> Unit {
   self.modified = Some(modified)
+}
+
+///|
+/// 复制元数据并替换语言。
+pub fn Metadata::with_language(self : Metadata, language : String) -> Metadata {
+  copy_metadata(self, language, self.modified, self.metas)
+}
+
+///|
+/// 复制元数据并替换 `dcterms:modified`。
+pub fn Metadata::with_modified(self : Metadata, modified : String) -> Metadata {
+  copy_metadata(self, self.language, Some(modified), self.metas)
+}
+
+///|
+/// 复制元数据并追加扩展 `meta` 条目。
+pub fn Metadata::with_metas_appended(
+  self : Metadata,
+  extras : Array[Meta],
+) -> Metadata {
+  let metas : Array[Meta] = []
+  for meta in self.metas {
+    metas.push(meta)
+  }
+  for meta in extras {
+    metas.push(meta)
+  }
+  copy_metadata(self, self.language, self.modified, metas)
+}
+
+///|
+/// 复制全部元数据字段，仅替换语言、修改时间与扩展元数据。
+fn copy_metadata(
+  metadata : Metadata,
+  language : String,
+  modified : String?,
+  metas : Array[Meta],
+) -> Metadata {
+  {
+    title: metadata.title,
+    language,
+    identifier: metadata.identifier,
+    identifier_id: metadata.identifier_id,
+    creators: metadata.creators,
+    contributors: metadata.contributors,
+    publishers: metadata.publishers,
+    dates: metadata.dates,
+    subjects: metadata.subjects,
+    descriptions: metadata.descriptions,
+    rights: metadata.rights,
+    modified,
+    metas,
+    series: metadata.series,
+  }
 }

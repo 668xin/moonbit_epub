@@ -65,6 +65,30 @@ pub fn render_container(package_path : String) -> String {
 // ---------------------------------------------------------------------------
 
 ///|
+/// Media Overlay 文件：SMIL 文档及其对应的内容文档。
+pub struct MediaOverlayFile {
+  // SMIL 文档在内容目录内的路径，如 `text/ch1.smil`
+  href : String
+  // 对应的内容文档路径，如 `text/ch1.xhtml`
+  content_href : String
+  // SMIL 文档文本
+  smil : String
+  // SMIL 总时长（毫秒），用于生成 media:duration 元数据
+  duration_ms : Int
+} derive(@debug.Debug)
+
+///|
+/// 构造 Media Overlay 文件。
+pub fn MediaOverlayFile::new(
+  href : String,
+  content_href : String,
+  smil : String,
+  duration_ms? : Int,
+) -> MediaOverlayFile {
+  { href, content_href, smil, duration_ms: duration_ms.unwrap_or(0), }
+}
+
+///|
 /// 容器打包选项。
 pub struct PackageOptions {
   // 内容目录（相对容器根），默认为 `OEBPS`
@@ -81,6 +105,8 @@ pub struct PackageOptions {
   mut use_descriptors : Bool
   // 应用于内容文档的样式表 href（相对内容文档）
   stylesheets : Array[String]
+  // Media Overlays 文件
+  media_overlays : Array[MediaOverlayFile]
 } derive(@debug.Debug)
 
 ///|
@@ -94,6 +120,7 @@ pub fn PackageOptions::new() -> PackageOptions {
     language: "",
     use_descriptors: false,
     stylesheets: [],
+    media_overlays: [],
   }
 }
 
@@ -160,6 +187,26 @@ pub fn PackageOptions::add_stylesheet(
   self.stylesheets.push(href)
 }
 
+///|
+/// 追加一个 Media Overlay（SMIL）文件及其对应的内容文档。
+///
+/// `duration_ms` 用于生成 `media:duration` 元数据；缺省为 0 时不生成，
+/// 但 EPUB 3 的 Media Overlays 通常要求该元数据，建议显式传入。
+pub fn PackageOptions::add_media_overlay(
+  self : PackageOptions,
+  href : String,
+  content_href : String,
+  smil : String,
+  duration_ms? : Int,
+) -> Unit {
+  let file = match duration_ms {
+    Some(value) =>
+      MediaOverlayFile::new(href, content_href, smil, duration_ms=value)
+    None => MediaOverlayFile::new(href, content_href, smil)
+  }
+  self.media_overlays.push(file)
+}
+
 // ---------------------------------------------------------------------------
 // 装配
 // ---------------------------------------------------------------------------
@@ -172,143 +219,120 @@ fn utf8_bytes(text : String) -> Bytes {
   buf.to_bytes()
 }
 
+// ---------------------------------------------------------------------------
+// 生成文档
+// ---------------------------------------------------------------------------
+
 ///|
-/// 把既有清单条目上的可定制字段合并到自动装配的条目。
-///
-/// 自动装配负责 `id` / `href` / `media-type` 与文件实际位置，故只继承
-/// `properties`、`fallback` 与 `media-overlay`。
-fn merge_manifest_fields(
-  target : @model.ManifestItem,
-  source : @model.ManifestItem,
+/// 已生成的包文档集合：装配后的书籍与三个 XML 文本。
+pub struct PackageDocuments {
+  book : @model.Book
+  opf : String
+  nav : String
+  ncx : String
+} derive(@debug.Debug)
+
+///|
+/// 按打包选项覆盖元数据语言。
+fn metadata_for(
+  metadata : @model.Metadata,
+  options : PackageOptions,
+) -> @model.Metadata {
+  if options.language.is_empty() {
+    metadata
+  } else {
+    metadata.with_language(options.language)
+  }
+}
+
+///|
+/// Media Overlay 的清单 id：由 SMIL 路径规范化得到。
+fn media_overlay_id(href : String) -> String {
+  "mo-" + @spec.normalize_id(@spec.normalize_path(href))
+}
+
+///|
+/// 生成 media:duration 元数据：全局总时长与逐覆盖文档时长。
+fn media_duration_metas(
+  overlays : Array[MediaOverlayFile],
+) -> Array[@model.Meta] {
+  let out : Array[@model.Meta] = []
+  let mut total = 0
+  for overlay in overlays {
+    total += overlay.duration_ms
+    if overlay.duration_ms > 0 {
+      out.push(
+        @model.Meta::of_property_content_refines(
+          "media:duration",
+          media_overlay_id(overlay.href),
+          @media.format_clock_ms(overlay.duration_ms),
+        ),
+      )
+    }
+  }
+  if total > 0 {
+    out.push(
+      @model.Meta::of_property_content(
+        "media:duration",
+        @media.format_clock_ms(total),
+      ),
+    )
+  }
+  out
+}
+
+///|
+/// 把 Media Overlay 条目加入清单，并为对应内容文档设置 `media-overlay`。
+fn apply_media_overlays(
+  manifest : @model.Manifest,
+  overlays : Array[MediaOverlayFile],
 ) -> Unit {
-  for property in source.properties {
-    if !target.has_property(property) {
-      target.add_property(property)
+  for overlay in overlays {
+    let href = @spec.normalize_path(overlay.href)
+    let content_href = @spec.normalize_path(overlay.content_href)
+    let id = media_overlay_id(overlay.href)
+    let item = @model.ManifestItem::new(id, href, @spec.mt_smil)
+    let _ = manifest.add(item)
+    match manifest.find_by_href(content_href) {
+      Some(content) => content.set_media_overlay(id)
+      None => ()
     }
   }
-  match source.fallback {
-    Some(fallback) => target.set_fallback(fallback)
-    None => ()
-  }
-  match source.media_overlay {
-    Some(media_overlay) => target.set_media_overlay(media_overlay)
-    None => ()
-  }
 }
 
 ///|
-/// 按 href 优先、id 次之查找既有清单条目。
-fn find_existing_item(
-  manifest : @model.Manifest,
-  href : String,
-  id : String,
-) -> @model.ManifestItem? {
-  match manifest.find_by_href(href) {
-    Some(item) => Some(item)
-    None => manifest.find_by_id(id)
-  }
-}
-
-///|
-/// 查找既有导航条目：优先 `properties` 含 `nav`，其次约定 id / 文件名。
-fn find_nav_item(
-  manifest : @model.Manifest,
-  nav_filename : String,
-) -> @model.ManifestItem? {
-  for item in manifest.items {
-    if item.has_property(@spec.epub_property_nav) {
-      return Some(item)
-    }
-  }
-  match manifest.find_by_id(@spec.manifest_id_nav) {
-    Some(item) => Some(item)
-    None => manifest.find_by_href(nav_filename)
-  }
-}
-
-///|
-/// 依据章节树与资源装配清单：导航、NCX、各章节内容文档与全部资源。
+/// 生成 OPF、nav.xhtml 与 toc.ncx 文本，不写 ZIP。
 ///
-/// 章节以 `chapter.id` 作为清单 ID；资源 ID 由其 href 规范化得到，
-/// ID 冲突时后续条目被忽略（`Manifest::add` 拒绝重复）。
-/// 若书籍已自行登记同名 / 同 href 条目，其 `properties`、`fallback` 与
-/// `media-overlay` 会被继承，避免端到端打包丢失用户的清单定制。
-fn build_manifest(
+/// 与 `package_book` 使用完全相同的装配与语言覆盖逻辑，便于校验层检查
+/// 实际生成的文档。
+pub fn render_documents(
   book : @model.Book,
   options : PackageOptions,
-) -> @model.Manifest {
-  let manifest = @model.Manifest::new()
-  let nav_item = @model.ManifestItem::new(
-    @spec.manifest_id_nav,
-    options.nav_filename,
-    @spec.mt_xhtml,
+) -> PackageDocuments {
+  let assembled = @model.assemble_book(
+    book,
+    nav_filename=options.nav_filename,
+    ncx_filename=options.ncx_filename,
   )
-  nav_item.add_property(@spec.epub_property_nav)
-  match find_nav_item(book.manifest, options.nav_filename) {
-    Some(existing) => merge_manifest_fields(nav_item, existing)
-    None => ()
-  }
-  let _ = manifest.add(nav_item)
-  let ncx_item = @model.ManifestItem::new(
-    @spec.manifest_id_ncx,
-    options.ncx_filename,
-    @spec.mt_ncx,
+  apply_media_overlays(assembled.manifest, options.media_overlays)
+  let metadata = metadata_for(assembled.metadata, options).with_metas_appended(
+    media_duration_metas(options.media_overlays),
   )
-  match
-    find_existing_item(
-      book.manifest,
-      options.ncx_filename,
-      @spec.manifest_id_ncx,
-    ) {
-    Some(existing) => merge_manifest_fields(ncx_item, existing)
-    None => ()
-  }
-  let _ = manifest.add(ncx_item)
-  for chapter in @model.flatten_chapters(book.chapters) {
-    let href = @model.chapter_href(chapter)
-    let item = @model.ManifestItem::new(chapter.id, href, @spec.mt_xhtml)
-    match find_existing_item(book.manifest, href, chapter.id) {
-      Some(existing) => merge_manifest_fields(item, existing)
-      None => ()
-    }
-    let _ = manifest.add(item)
-  }
-  for resource in book.resources {
-    let id = @model.resource_id(resource)
-    let item = @model.ManifestItem::new(id, resource.href, resource.media_type)
-    match find_existing_item(book.manifest, resource.href, id) {
-      Some(existing) => merge_manifest_fields(item, existing)
-      None => ()
-    }
-    let _ = manifest.add(item)
-  }
-  manifest
-}
-
-///|
-/// 依据章节树装配阅读顺序：优先沿用书籍已定义的 `spine`，为空时按
-/// 章节树深度优先顺序生成；`spine@toc` 默认指向 NCX 条目。
-fn build_spine(book : @model.Book) -> @model.Spine {
-  let spine = @model.Spine::new()
-  if book.spine.items.length() > 0 {
-    for item in book.spine.items {
-      spine.add(item)
-    }
-    match book.spine.toc {
-      Some(toc) => spine.set_toc(toc)
-      None => spine.set_toc(@spec.manifest_id_ncx)
-    }
-    match book.spine.page_progression_direction {
-      Some(direction) => spine.set_page_progression_direction(direction)
-      None => ()
-    }
-  } else {
-    spine.set_toc(@spec.manifest_id_ncx)
-    for chapter in @model.flatten_chapters(book.chapters) {
-      spine.add(@model.SpineItem::new(chapter.id))
-    }
-  }
-  spine
+  let assembled = assembled.with_metadata(metadata)
+  let language = metadata.language
+  let opf_text = @opf.render_package_from(
+    metadata,
+    assembled.manifest,
+    assembled.spine,
+    @opf.OpfOptions::new(),
+  )
+  let nav_options = @nav.NavOptions::new()
+  nav_options.set_language(language)
+  let nav_text = @nav.render_nav(assembled, nav_options)
+  let ncx_options = @nav.NcxOptions::new()
+  ncx_options.set_language(language)
+  let ncx_text = @nav.render_ncx(assembled, ncx_options)
+  { book: assembled, opf: opf_text, nav: nav_text, ncx: ncx_text, }
 }
 
 // ---------------------------------------------------------------------------
@@ -319,30 +343,13 @@ fn build_spine(book : @model.Book) -> @model.Spine {
 /// 把书籍模型打包为完整的 EPUB（OCF/ZIP）字节流。
 ///
 /// 生成顺序：`mimetype`（存储）→ `META-INF/container.xml` → 包文档 →
-/// 导航文档 → NCX → 各章节内容文档 → 资源。除 `mimetype` 外均优先
-/// Deflate 压缩，压缩无收益时自动退回存储。
+/// 导航文档 → NCX → 各章节内容文档 → 资源 → Media Overlays。除
+/// `mimetype` 外均优先 Deflate 压缩，压缩无收益时自动退回存储。
 pub fn package_book(book : @model.Book, options : PackageOptions) -> Bytes {
-  let language = if options.language.is_empty() {
-    book.metadata.language
-  } else {
-    options.language
-  }
+  let documents = render_documents(book, options)
   let content = options.content_dir
-  let manifest = build_manifest(book, options)
-  let spine = build_spine(book)
   let opf_path = @spec.path_join(content, options.package_filename)
-  let opf_text = @opf.render_package_from(
-    book.metadata,
-    manifest,
-    spine,
-    @opf.OpfOptions::new(),
-  )
-  let nav_options = @nav.NavOptions::new()
-  nav_options.set_language(language)
-  let nav_text = @nav.render_nav(book, nav_options)
-  let ncx_options = @nav.NcxOptions::new()
-  ncx_options.set_language(language)
-  let ncx_text = @nav.render_ncx(book, ncx_options)
+  let language = documents.book.metadata.language
   let zip = @zip.ZipWriter::new()
   zip.set_use_descriptors(options.use_descriptors)
   zip.add_stored(@spec.ocf_mimetype, utf8_bytes(@spec.mt_epub))
@@ -350,16 +357,16 @@ pub fn package_book(book : @model.Book, options : PackageOptions) -> Bytes {
     @spec.ocf_container_path,
     utf8_bytes(render_container(opf_path)),
   )
-  zip.add_deflated(opf_path, utf8_bytes(opf_text))
+  zip.add_deflated(opf_path, utf8_bytes(documents.opf))
   zip.add_deflated(
     @spec.path_join(content, options.nav_filename),
-    utf8_bytes(nav_text),
+    utf8_bytes(documents.nav),
   )
   zip.add_deflated(
     @spec.path_join(content, options.ncx_filename),
-    utf8_bytes(ncx_text),
+    utf8_bytes(documents.ncx),
   )
-  for chapter in @model.flatten_chapters(book.chapters) {
+  for chapter in @model.flatten_chapters(documents.book.chapters) {
     let xhtml_options = @xhtml.XhtmlOptions::new(language~)
     for href in options.stylesheets {
       xhtml_options.add_stylesheet(href)
@@ -370,8 +377,17 @@ pub fn package_book(book : @model.Book, options : PackageOptions) -> Bytes {
       utf8_bytes(doc),
     )
   }
-  for resource in book.resources {
-    zip.add_deflated(@spec.path_join(content, resource.href), resource.data)
+  for resource in documents.book.resources {
+    zip.add_deflated(
+      @spec.path_join(content, @model.resource_href(resource)),
+      resource.data,
+    )
+  }
+  for overlay in options.media_overlays {
+    zip.add_deflated(
+      @spec.path_join(content, @spec.normalize_path(overlay.href)),
+      utf8_bytes(overlay.smil),
+    )
   }
   zip.finish()
 }

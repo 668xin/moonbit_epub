@@ -133,21 +133,16 @@ pub fn Overlay::is_empty(self : Overlay) -> Bool {
 
 ///|
 /// SMIL 文档生成选项。
+///
+/// SMIL 3.0 的 `smil` 根元素不接受 `xml:lang`，故当前不提供语言属性。
 pub struct SmilOptions {
-  // 文档语言，写入根元素 `xml:lang`
-  mut language : String?
+  priv _reserved : Unit
 } derive(@debug.Debug)
 
 ///|
-/// 构造选项：不声明语言。
+/// 构造选项。
 pub fn SmilOptions::new() -> SmilOptions {
-  { language: None, }
-}
-
-///|
-/// 设置文档语言。
-pub fn SmilOptions::set_language(self : SmilOptions, language : String) -> Unit {
-  self.language = Some(language)
+  { _reserved: (), }
 }
 
 // ---------------------------------------------------------------------------
@@ -260,15 +255,12 @@ fn write_seq(out : Array[Char], seq : Seq, depth : Int) -> Unit {
 ///|
 /// 渲染完整的 SMIL 覆盖文档。
 pub fn render_smil(overlay : Overlay, options : SmilOptions) -> String {
+  let _ = options
   let out : Array[Char] = []
   out.push_iter("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".iter())
   out.push_iter("<smil".iter())
   write_attr(out, "xmlns", @spec.ns_smil)
   write_attr(out, "xmlns:epub", @spec.ns_epub)
-  match options.language {
-    Some(language) => write_attr(out, "xml:lang", language)
-    None => ()
-  }
   write_attr(out, "version", @spec.smil_version)
   out.push('>')
   write_indent(out, 1)

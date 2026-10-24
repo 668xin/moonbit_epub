@@ -347,3 +347,30 @@ test "content_identifier: 基于内容的确定性 urn:uuid 派生" {
   assert_eq(content_identifier("x").length(), 45)
   assert_true(content_identifier("x").has_prefix(urn_uuid_prefix))
 }
+
+///|
+test "normalize_path: Windows 反斜杠分隔符" {
+  assert_eq(normalize_path("images\\cover.png"), "images/cover.png")
+  assert_eq(normalize_path("a\\b\\..\\c"), "a/c")
+  assert_eq(normalize_path("\\\\server\\share"), "/server/share")
+}
+
+///|
+test "safe_path_segment: 替换路径分隔符与保留字符" {
+  assert_eq(safe_path_segment("ch1"), "ch1")
+  assert_eq(safe_path_segment("../evil"), "..-evil")
+  assert_eq(safe_path_segment("a/b\\c:d?e#f"), "a-b-c-d-e-f")
+}
+
+///|
+test "is_safe_relative_path: 接受相对路径并拒绝越界路径" {
+  assert_true(is_safe_relative_path("text/ch1.xhtml"))
+  assert_true(is_safe_relative_path("images\\cover.png"))
+  assert_true(is_safe_relative_path("a/../b.png"))
+  assert_false(is_safe_relative_path(""))
+  assert_false(is_safe_relative_path("."))
+  assert_false(is_safe_relative_path(".."))
+  assert_false(is_safe_relative_path("../evil"))
+  assert_false(is_safe_relative_path("/etc/passwd"))
+  assert_false(is_safe_relative_path("C:/Windows/x"))
+}

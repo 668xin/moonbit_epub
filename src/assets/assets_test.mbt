@@ -108,6 +108,18 @@ test "ResourceRegistry: 清单条目 ID 与顺序" {
 }
 
 ///|
+test "ResourceRegistry: 反斜杠路径与 properties 透传" {
+  let registry = ResourceRegistry::new()
+  let resource = @model.Resource::new("images\\cover.png", @spec.mt_png, b"x")
+  resource.properties.push("cover-image")
+  assert_true(registry.add(resource))
+  assert_true(registry.find("images/cover.png") is Some(_))
+  let items = registry.manifest_items()
+  assert_eq(items[0].href, "images/cover.png")
+  assert_true(items[0].has_property("cover-image"))
+}
+
+///|
 test "base_stylesheet: 关键排版规则齐全" {
   assert_false(base_stylesheet.is_empty())
   assert_true(base_stylesheet.contains("line-height: 1.6"))

@@ -3,6 +3,7 @@ import {
   "668xin/moon_epub/src/model",
   "668xin/moon_epub/src/zip",
   "moonbitlang/core/debug",
+  "moonbitlang/core/encoding/utf8",
 }
 
 // 与 model 包同因：公开类型上的 derive 会触发工具链

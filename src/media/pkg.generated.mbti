@@ -47,10 +47,9 @@ pub fn Seq::new(String, String, epub_type? : String) -> Self
 pub fn Seq::par_count(Self) -> Int
 
 pub struct SmilOptions {
-  mut language : String?
+  // private fields
 } derive(@debug.Debug)
 pub fn SmilOptions::new() -> Self
-pub fn SmilOptions::set_language(Self, String) -> Unit
 
 // Type aliases
 

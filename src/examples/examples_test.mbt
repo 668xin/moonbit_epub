@@ -32,17 +32,36 @@ test "styled: 自定义样式与图片资源" {
 }
 
 ///|
+test "media: 章节、音频资源与 SMIL" {
+  let book = media()
+  assert_eq(book.chapter_count(), 1)
+  assert_eq(book.spine.items.length(), 1)
+  assert_eq(book.resources.length(), 1)
+  // 导航 + NCX + 单章节 + 音频
+  assert_eq(book.manifest.length(), 4)
+  assert_eq(book.metadata.title, "有声示例")
+  let audio = book.resources[0]
+  assert_eq(audio.media_type, @spec.mt_mp3)
+  assert_eq(audio.data.length(), 417)
+  let smil = media_smil()
+  assert_true(smil.contains("<smil"))
+  assert_true(smil.contains("../audio/ch1.mp3"))
+  assert_true(smil.contains("ch1.xhtml"))
+}
+
+///|
 test "by_name: 名称索引" {
   assert_true(by_name("minimal") is Some(_))
   assert_true(by_name("multi") is Some(_))
   assert_true(by_name("styled") is Some(_))
+  assert_true(by_name("media") is Some(_))
   assert_true(by_name("missing") is None)
 }
 
 ///|
 test "names: 示例清单" {
   let names = names()
-  assert_eq(names.length(), 3)
+  assert_eq(names.length(), 4)
   assert_eq(names[0], "minimal")
 }
 
@@ -100,6 +119,7 @@ test "names: 顺序与内容" {
   assert_eq(names[0], "minimal")
   assert_eq(names[1], "multi-chapter")
   assert_eq(names[2], "styled")
+  assert_eq(names[3], "media")
 }
 
 ///|

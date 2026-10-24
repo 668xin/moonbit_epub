@@ -18,11 +18,14 @@ XHTML5 内容文档、样式与资源管理、Media Overlays 朗读同步、OCF/
 - **规范对齐**：媒体类型、命名空间、OCF 保留文件名等均以规范常量集中管理。
 - **可访问性内建**：提供 schema.org 可访问性元数据（accessMode、accessibilityFeature、
   accessibilityHazard 等）与 WCAG conformance 声明。
-- **有声书支持**：生成 EPUB Media Overlays（SMIL 3.0）文档，描述文本与音频的同步。
+- **有声书支持**：生成 EPUB Media Overlays（SMIL 3.0）文档，并可通过
+  `PackageOptions.add_media_overlay` 写入容器、登记清单元数据与 `media-overlay` 关联。
+- **CFI 定位**：支持 EPUB CFI 的构造/解析，并可按阅读顺序为章节内容文档生成 CFI。
 - **结构校验器**：独立于生成层，依据规范常量对书籍模型给出稳定的诊断代码
-  （`MET` / `CHP` / `RES` / `OPF` / `SPN` / `RCH` / `CON`），支持文本与 JSON 输出。
+  （`MET` / `CHP` / `RES` / `OPF` / `SPN` / `RCH` / `CON`），同时检查实际生成的
+  OPF / nav / NCX 文档一致性，支持文本与 JSON 输出。
 - **可复现输出**：ZIP 时间戳固定为 1980-01-01，压缩无收益时自动退回存储模式，
-  相同输入产生逐字节一致的产物。
+  未显式设置 `dcterms:modified` 时注入固定默认值，相同输入产生逐字节一致的产物。
 
 ## 安装
 
@@ -57,19 +60,29 @@ moon run src/cli --target wasm-gc -- inspect styled
 moon run src/cli --target wasm-gc -- examples
 ```
 
+示例不存在或 `check` 发现错误级诊断时，CLI 以非零退出码结束，便于自动化管线判断。
+
 ## 作为库使用
 
 ```moonbit
-// 取一个已装配好 manifest / spine 的示例书籍（也可自行构造 @model.Book）
+// 取一个示例书籍；也可自行构造 @model.Book，
+// package_book / validate_book 会自动装配清单与阅读顺序
 let book = @examples.multi_chapter()
 
 // 打包为 EPUB 字节流
 let options = @ocf.PackageOptions::new()
 // 内容文档位于 OEBPS/text/，样式表位于 OEBPS/styles/
 options.add_stylesheet("../styles/style.css")
+// 可选：登记 Media Overlay（SMIL 文本可由 @media.render_smil 生成）
+// options.add_media_overlay("text/ch1.smil", "text/ch1.xhtml", smil_text, duration_ms=1200)
 let epub : Bytes = @ocf.package_book(book, options)
 
+// 按阅读顺序生成章节内容文档的 CFI
+let cfi = @cfi.chapter_cfi(book, "ch1")
+
 // 结构校验：模型级 + 生成容器的 OCF 布局
+// validate_book 会按默认 nav / NCX 自动装配；如需检查手工装配结果，
+// 可改用 @validate.validate_book_raw(book)
 let report = @validate.validate_book(book)
 report.merge(@validate.validate_package(epub))
 println(report.summary())
@@ -89,13 +102,13 @@ if report.is_ok() {
 | `opf`      | OPF 包文档序列化（元数据、manifest、spine）                                       |
 | `nav`      | `nav.xhtml` 导航与 `toc.ncx` 向后兼容目录                                         |
 | `zip`      | ZIP 写入器：本地文件头、中央目录、CRC32、DEFLATE                                  |
-| `ocf`      | OCF 容器布局与端到端打包（`package_book`）                                        |
+| `ocf`      | OCF 容器布局与端到端打包（`package_book`、`render_documents`、Media Overlays）    |
 | `assets`   | 样式表合成、MIME 类型推断、资源注册                                               |
-| `cfi`      | EPUB CFI 定位路径构造与解析                                                       |
+| `cfi`      | EPUB CFI 定位路径构造/解析与章节 CFI                                              |
 | `a11y`     | 可访问性元数据体系                                                                |
-| `media`    | Media Overlays / SMIL 朗读同步                                                    |
-| `validate` | 结构校验规则集与诊断报告（模型级 + 生成容器级）                                   |
-| `examples` | 三个可直接打包的示例书籍（`minimal` / `multi-chapter` / `styled`）                |
+| `media`    | Media Overlays / SMIL 朗读同步（可经 `PackageOptions` 打包）                      |
+| `validate` | 结构校验规则集与诊断报告（模型级 + 生成文档级 + 生成容器级）                      |
+| `examples` | 四个可直接打包的示例书籍（`minimal` / `multi-chapter` / `styled` / `media`）      |
 | `cli`      | 命令行入口                                                                        |
 
 ## 内置示例
@@ -104,6 +117,8 @@ if report.is_ok() {
 - `multi-chapter`：嵌套目录与标题、段落、列表、引用、代码块、表格、脚注等
   多种块级元素。
 - `styled`：内置阅读器友好 CSS 与自定义 CSS 合成，另附封面图片资源。
+- `media`：单章节有声书示例，含 MP3 音频资源、SMIL Media Overlay 与
+  `media-overlay` 清单关联。
 
 校验报告示例（内置示例均通过）：
 
@@ -152,6 +167,9 @@ data = open("minimal.epub", "rb").read()
 z = zipfile.ZipFile(io.BytesIO(data))
 print(z.namelist(), z.testzip(), z.read("mimetype").decode())
 ```
+
+CI 在单元测试后会下载 EPUBCheck 5.1.0，对四本示例执行
+`epubcheck.jar --failonwarnings`，要求 0 fatal / 0 error / 0 warning。
 
 ## 发布到 mooncakes.io
 

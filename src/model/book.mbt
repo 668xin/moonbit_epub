@@ -42,7 +42,19 @@ pub fn Resource::css(href : String, css : String) -> Resource {
 ///|
 /// 由资源路径派生默认清单 ID（经 `normalize_id` 规范化）。
 pub fn resource_id(resource : Resource) -> String {
-  @spec.normalize_id(resource.href)
+  @spec.normalize_id(resource_href(resource))
+}
+
+///|
+/// 资源在容器内的规范化路径：统一分隔符、解析 `.` 与 `..`。
+///
+/// 空 href 保持为空，交由校验层报告。
+pub fn resource_href(resource : Resource) -> String {
+  if resource.href.is_empty() {
+    ""
+  } else {
+    @spec.normalize_path(resource.href)
+  }
 }
 
 ///|
@@ -158,8 +170,14 @@ pub fn chapter_depth(chapters : Array[Chapter]) -> Int {
 
 ///|
 /// 章节对应的内容文档容器内路径：`text/<id>.xhtml`。
+///
+/// 章节 id 中的 `/`、`\`、`:` 会被替换为 `-`，避免生成越界或非法路径；
+/// 合法的 XML ID 不受影响。
 pub fn chapter_href(chapter : Chapter) -> String {
-  @spec.path_join(@spec.default_text_dir, chapter.id + ".xhtml")
+  @spec.path_join(
+    @spec.default_text_dir,
+    @spec.safe_path_segment(chapter.id) + ".xhtml",
+  )
 }
 
 ///|
@@ -232,4 +250,177 @@ pub fn Book::has_unique_chapter_ids(self : Book) -> Bool {
     seen.set(chapter.id, true)
   }
   true
+}
+
+///|
+/// 复制书籍并替换元数据，其余字段共享引用。
+pub fn Book::with_metadata(self : Book, metadata : Metadata) -> Book {
+  {
+    metadata,
+    chapters: self.chapters,
+    resources: self.resources,
+    manifest: self.manifest,
+    spine: self.spine,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 统一装配
+// ---------------------------------------------------------------------------
+
+///|
+/// 把既有清单条目上的可定制字段合并到自动装配的条目。
+///
+/// 自动装配负责 `id` / `href` / `media-type` 与文件实际位置，故只继承
+/// `properties`、`fallback` 与 `media-overlay`。
+fn merge_manifest_fields(target : ManifestItem, source : ManifestItem) -> Unit {
+  for property in source.properties {
+    if !target.has_property(property) {
+      target.add_property(property)
+    }
+  }
+  match source.fallback {
+    Some(fallback) => target.set_fallback(fallback)
+    None => ()
+  }
+  match source.media_overlay {
+    Some(media_overlay) => target.set_media_overlay(media_overlay)
+    None => ()
+  }
+}
+
+///|
+/// 按 href 优先、id 次之查找既有清单条目。
+fn find_existing_item(
+  manifest : Manifest,
+  href : String,
+  id : String,
+) -> ManifestItem? {
+  match manifest.find_by_href(href) {
+    Some(item) => Some(item)
+    None => manifest.find_by_id(id)
+  }
+}
+
+///|
+/// 查找既有导航条目：优先 `properties` 含 `nav`，其次约定 id / 文件名。
+fn find_nav_item(manifest : Manifest, nav_filename : String) -> ManifestItem? {
+  for item in manifest.items {
+    if item.has_property(@spec.epub_property_nav) {
+      return Some(item)
+    }
+  }
+  match manifest.find_by_id(@spec.manifest_id_nav) {
+    Some(item) => Some(item)
+    None => manifest.find_by_href(nav_filename)
+  }
+}
+
+///|
+/// 依据章节树与资源装配清单：导航、NCX、各章节内容文档与全部资源。
+///
+/// 章节以 `chapter.id` 作为清单 ID；资源 ID 由其 href 规范化得到，
+/// ID 冲突时后续条目被忽略（`Manifest::add` 拒绝重复）。
+/// 若书籍已自行登记同名 / 同 href 条目，其 `properties`、`fallback` 与
+/// `media-overlay` 会被继承，避免端到端打包丢失用户的清单定制。
+fn assemble_manifest(
+  book : Book,
+  nav_filename : String,
+  ncx_filename : String,
+) -> Manifest {
+  let manifest = Manifest::new()
+  let nav_item = ManifestItem::new(
+    @spec.manifest_id_nav, nav_filename, @spec.mt_xhtml,
+  )
+  nav_item.add_property(@spec.epub_property_nav)
+  match find_nav_item(book.manifest, nav_filename) {
+    Some(existing) => merge_manifest_fields(nav_item, existing)
+    None => ()
+  }
+  let _ = manifest.add(nav_item)
+  let ncx_item = ManifestItem::new(
+    @spec.manifest_id_ncx, ncx_filename, @spec.mt_ncx,
+  )
+  match find_existing_item(book.manifest, ncx_filename, @spec.manifest_id_ncx) {
+    Some(existing) => merge_manifest_fields(ncx_item, existing)
+    None => ()
+  }
+  let _ = manifest.add(ncx_item)
+  for chapter in flatten_chapters(book.chapters) {
+    let href = chapter_href(chapter)
+    let item = ManifestItem::new(chapter.id, href, @spec.mt_xhtml)
+    match find_existing_item(book.manifest, href, chapter.id) {
+      Some(existing) => merge_manifest_fields(item, existing)
+      None => ()
+    }
+    let _ = manifest.add(item)
+  }
+  for resource in book.resources {
+    let href = resource_href(resource)
+    let id = resource_id(resource)
+    let item = ManifestItem::new(id, href, resource.media_type)
+    for property in resource.properties {
+      if !item.has_property(property) {
+        item.add_property(property)
+      }
+    }
+    match find_existing_item(book.manifest, href, id) {
+      Some(existing) => merge_manifest_fields(item, existing)
+      None => ()
+    }
+    let _ = manifest.add(item)
+  }
+  manifest
+}
+
+///|
+/// 依据章节树装配阅读顺序：优先沿用书籍已定义的 `spine`，为空时按
+/// 章节树深度优先顺序生成；`spine@toc` 默认指向 NCX 条目。
+fn assemble_spine(book : Book) -> Spine {
+  let spine = Spine::new()
+  if book.spine.items.length() > 0 {
+    for item in book.spine.items {
+      spine.add(item)
+    }
+    match book.spine.toc {
+      Some(toc) => spine.set_toc(toc)
+      None => spine.set_toc(@spec.manifest_id_ncx)
+    }
+  } else {
+    spine.set_toc(@spec.manifest_id_ncx)
+    for chapter in flatten_chapters(book.chapters) {
+      spine.add(SpineItem::new(chapter.id))
+    }
+  }
+  match book.spine.page_progression_direction {
+    Some(direction) => spine.set_page_progression_direction(direction)
+    None => ()
+  }
+  spine
+}
+
+///|
+/// 装配出可打包的书籍视图：补齐导航 / NCX / 章节 / 资源清单与阅读顺序。
+///
+/// 返回新的 `Book`，不修改调用方对象；章节与资源数组共享引用。
+/// 未设置 `dcterms:modified` 时注入确定性默认值，保证产物可复现且符合
+/// EPUB 3 的必需元数据要求。`PackageOptions` 可覆盖导航 / NCX 文件名。
+pub fn assemble_book(
+  book : Book,
+  nav_filename? : String,
+  ncx_filename? : String,
+) -> Book {
+  let nav_filename = nav_filename.unwrap_or(@spec.default_nav_filename)
+  let ncx_filename = ncx_filename.unwrap_or(@spec.default_ncx_filename)
+  let metadata = match book.metadata.modified {
+    Some(_) => book.metadata
+    None => book.metadata.with_modified(@spec.default_modified)
+  }
+  {
+    metadata,
+    chapters: book.chapters,
+    resources: book.resources,
+    manifest: assemble_manifest(book, nav_filename, ncx_filename),
+    spine: assemble_spine(book),
+  }
 }

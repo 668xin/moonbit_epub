@@ -18,6 +18,8 @@ pub struct ZipEntryInfo {
   compressed_size : Int
   // 未压缩尺寸
   uncompressed_size : Int
+  // 本地文件头偏移
+  local_offset : Int
 } derive(Eq, @debug.Debug)
 
 ///|
@@ -99,8 +101,37 @@ pub fn entries(data : Bytes) -> Array[ZipEntryInfo] {
       stored: compression_method == 0,
       compressed_size,
       uncompressed_size,
+      local_offset: read_u32_le(data, p + 42),
     })
     p = name_end + extra_len + comment_len
   }
   out
+}
+
+///|
+/// 读取一个以存储方式（未压缩）写入的条目内容。
+///
+/// 仅支持 `Stored` 条目；条目不存在、被压缩或本地头损坏时返回 `None`。
+/// OCF 的 `mimetype` 必须存储，故可直接用于内容校验。
+pub fn read_stored(data : Bytes, path : String) -> Bytes? {
+  for entry in entries(data) {
+    if entry.path == path && entry.stored {
+      let offset = entry.local_offset
+      if offset < 0 || offset + 30 > data.length() {
+        return None
+      }
+      if read_u32_le(data, offset) != 0x04034B50 {
+        return None
+      }
+      let name_len = read_u16_le(data, offset + 26)
+      let extra_len = read_u16_le(data, offset + 28)
+      let start = offset + 30 + name_len + extra_len
+      let end = start + entry.uncompressed_size
+      if start < 0 || end > data.length() {
+        return None
+      }
+      return Some(data[start:end].to_owned())
+    }
+  }
+  None
 }

@@ -11,9 +11,26 @@ pub fn package_book(@model.Book, PackageOptions) -> Bytes
 
 pub fn render_container(String) -> String
 
+pub fn render_documents(@model.Book, PackageOptions) -> PackageDocuments
+
 // Errors
 
 // Types and methods
+pub struct MediaOverlayFile {
+  href : String
+  content_href : String
+  smil : String
+  duration_ms : Int
+} derive(@debug.Debug)
+pub fn MediaOverlayFile::new(String, String, String, duration_ms? : Int) -> Self
+
+pub struct PackageDocuments {
+  book : @model.Book
+  opf : String
+  nav : String
+  ncx : String
+} derive(@debug.Debug)
+
 pub struct PackageOptions {
   mut content_dir : String
   mut package_filename : String
@@ -22,7 +39,9 @@ pub struct PackageOptions {
   mut language : String
   mut use_descriptors : Bool
   stylesheets : Array[String]
+  media_overlays : Array[MediaOverlayFile]
 } derive(@debug.Debug)
+pub fn PackageOptions::add_media_overlay(Self, String, String, String, duration_ms? : Int) -> Unit
 pub fn PackageOptions::add_stylesheet(Self, String) -> Unit
 pub fn PackageOptions::new() -> Self
 pub fn PackageOptions::set_content_dir(Self, String) -> Unit

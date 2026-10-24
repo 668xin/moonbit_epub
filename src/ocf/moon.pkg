@@ -5,6 +5,7 @@ import {
   "668xin/moon_epub/src/opf",
   "668xin/moon_epub/src/nav",
   "668xin/moon_epub/src/zip",
+  "668xin/moon_epub/src/media",
   "moonbitlang/core/debug",
 }
 

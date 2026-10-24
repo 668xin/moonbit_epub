@@ -22,7 +22,8 @@ pub fn ResourceRegistry::add(
   self : ResourceRegistry,
   resource : @model.Resource,
 ) -> Bool {
-  if self.contains(resource.href) {
+  let href = @model.resource_href(resource)
+  if self.contains(href) {
     false
   } else {
     self.resources.push(resource)
@@ -58,7 +59,7 @@ pub fn ResourceRegistry::contains(
   href : String,
 ) -> Bool {
   for resource in self.resources {
-    if resource.href == href {
+    if @model.resource_href(resource) == href || resource.href == href {
       return true
     }
   }
@@ -72,7 +73,7 @@ pub fn ResourceRegistry::find(
   href : String,
 ) -> @model.Resource? {
   for resource in self.resources {
-    if resource.href == href {
+    if @model.resource_href(resource) == href || resource.href == href {
       return Some(resource)
     }
   }
@@ -125,13 +126,17 @@ pub fn ResourceRegistry::manifest_items(
 ) -> Array[@model.ManifestItem] {
   let out : Array[@model.ManifestItem] = []
   for resource in self.resources {
-    out.push(
-      @model.ManifestItem::new(
-        @model.resource_id(resource),
-        resource.href,
-        resource.media_type,
-      ),
+    let item = @model.ManifestItem::new(
+      @model.resource_id(resource),
+      @model.resource_href(resource),
+      resource.media_type,
     )
+    for property in resource.properties {
+      if !item.has_property(property) {
+        item.add_property(property)
+      }
+    }
+    out.push(item)
   }
   out
 }

@@ -158,7 +158,7 @@ test "render_package: 完整包文档" {
   let out = render_package(book, OpfOptions::new())
   let expected =
     #|<?xml version="1.0" encoding="UTF-8"?>
-    #|<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" prefix="marc: http://id.loc.gov/vocabulary/relators/" version="3.0" unique-identifier="pub-id" xml:lang="zh-CN">
+    #|<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id" xml:lang="zh-CN">
     #|  <metadata>
     #|    <dc:identifier id="pub-id">urn:uuid:1234</dc:identifier>
     #|    <dc:title>书名 &amp; 副题</dc:title>
@@ -347,9 +347,8 @@ test "render_package_from: 直接装配与语言空省略 xml:lang" {
   )
   assert_false(out.contains("xml:lang="))
   assert_true(out.contains("unique-identifier=\"pub-id\""))
-  assert_true(
-    out.contains("prefix=\"marc: http://id.loc.gov/vocabulary/relators/\""),
-  )
+  // marc 是 EPUB 3 保留前缀，不应重复声明
+  assert_false(out.contains("prefix=\"marc:"))
 }
 
 ///|

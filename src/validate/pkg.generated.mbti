@@ -13,9 +13,13 @@ pub fn render_text(Report) -> String
 
 pub fn validate_book(@model.Book) -> Report
 
+pub fn validate_book_raw(@model.Book) -> Report
+
 pub fn validate_chapters(Array[@model.Chapter]) -> Report
 
 pub fn validate_container(Array[ContainerEntry]) -> Report
+
+pub fn validate_documents(@model.Metadata, @model.Manifest, @model.Spine, String, String, String) -> Report
 
 pub fn validate_manifest(@model.Manifest) -> Report
 

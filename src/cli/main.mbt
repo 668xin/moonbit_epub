@@ -70,6 +70,61 @@ fn option_value(argv : Array[String], name : String) -> String? {
   None
 }
 
+///|
+/// 以非零状态结束进程。
+///
+/// 各后端分别调用平台退出接口，避免使用 panic 造成堆栈噪音；
+/// 调用方应先输出人类可读的原因。
+fn fail_exit() -> Unit {
+  cli_exit(1)
+}
+
+///|
+/// wasm-gc 后端的进程退出。
+#cfg(target="wasm-gc")
+fn cli_exit(code : Int) -> Unit = "__moonbit_sys_unstable" "exit"
+
+///|
+/// wasm 后端的进程退出。
+#cfg(target="wasm")
+fn cli_exit(code : Int) -> Unit = "wasi_snapshot_preview1" "proc_exit"
+
+///|
+/// native / llvm 后端的进程退出。
+#cfg(any(target="native", target="llvm"))
+extern "c" fn cli_exit(code : Int) = "exit"
+
+///|
+/// js 后端的进程退出：优先调用 `process.exit`，不可用时回退到 panic。
+#cfg(target="js")
+extern "js" fn cli_exit_js(code : Int) -> Bool =
+  #| function(code) {
+  #|   if (typeof process !== "undefined" && typeof process.exit === "function") {
+  #|     process.exit(code);
+  #|     return true;
+  #|   }
+  #|   return false;
+  #| }
+
+///|
+/// js 后端的进程退出包装。
+#cfg(target="js")
+fn cli_exit(code : Int) -> Unit {
+  if !cli_exit_js(code) {
+    panic()
+  }
+}
+
+///|
+/// 校验报告对应的 CLI 退出码：含错误为 1，否则为 0。
+fn exit_code_of(report : @validate.Report) -> Int {
+  if report.has_errors() {
+    1
+  } else {
+    0
+  }
+}
+
 // ---------------------------------------------------------------------------
 // 用法
 // ---------------------------------------------------------------------------
@@ -131,6 +186,13 @@ fn render_inspect(book : @model.Book) -> String {
     out.push_iter(" [".iter())
     out.push_iter(chapter.id.iter())
     out.push_iter("]".iter())
+    match @cfi.chapter_cfi(book, chapter.id) {
+      Some(cfi) => {
+        out.push_iter("  ".iter())
+        out.push_iter(cfi.render().iter())
+      }
+      None => ()
+    }
     out.push('\n')
   })
   out.push_iter("资源（".iter())
@@ -165,6 +227,7 @@ fn render_inspect(book : @model.Book) -> String {
 fn unknown_example(name : String) -> Unit {
   println("未知示例：" + name)
   println("可用示例：" + join_names())
+  fail_exit()
 }
 
 ///|
@@ -181,19 +244,37 @@ fn join_names() -> String {
 }
 
 ///|
+/// 为书籍生成与 `build` / `check` 共用的打包选项。
+fn package_options_for(
+  name : String,
+  book : @model.Book,
+) -> @ocf.PackageOptions {
+  let options = @ocf.PackageOptions::new()
+  // 为样式表资源生成指向内容文档的相对链接
+  for resource in book.resources {
+    if resource.media_type == @spec.mt_css {
+      options.add_stylesheet("../" + @model.resource_href(resource))
+    }
+  }
+  if name == "media" {
+    options.add_media_overlay(
+      "text/ch1.smil",
+      "text/ch1.xhtml",
+      @examples.media_smil(),
+      duration_ms=1200,
+    )
+  }
+  options
+}
+
+///|
 /// `build`：生成 EPUB 并按指定编码输出。
 fn run_build(argv : Array[String]) -> Unit {
   let name = first_positional(argv)
   match @examples.by_name(name) {
     None => unknown_example(name)
     Some(book) => {
-      let options = @ocf.PackageOptions::new()
-      // 为样式表资源生成指向内容文档的相对链接
-      for resource in book.resources {
-        if resource.media_type == @spec.mt_css {
-          options.add_stylesheet("../" + resource.href)
-        }
-      }
+      let options = package_options_for(name, book)
       let epub = @ocf.package_book(book, options)
       let format = match option_value(argv, "--format") {
         Some(value) => value
@@ -215,14 +296,30 @@ fn run_check(argv : Array[String]) -> Unit {
   match @examples.by_name(name) {
     None => unknown_example(name)
     Some(book) => {
+      let options = package_options_for(name, book)
+      let documents = @ocf.render_documents(book, options)
       let report = @validate.validate_book(book)
+      // 校验实际生成的 OPF / nav / NCX 文本与模型是否一致
+      report.merge(
+        @validate.validate_documents(
+          documents.book.metadata,
+          documents.book.manifest,
+          documents.book.spine,
+          documents.opf,
+          documents.nav,
+          documents.ncx,
+        ),
+      )
       // 同时检查实际生成的容器布局（mimetype 位置、必需文件等）
-      let packaged = @ocf.package_book(book, @ocf.PackageOptions::new())
+      let packaged = @ocf.package_book(book, options)
       report.merge(@validate.validate_package(packaged))
       if has_flag(argv, "--json") {
         println(@validate.render_json(report))
       } else {
         println(@validate.render_text(report))
+      }
+      if exit_code_of(report) != 0 {
+        fail_exit()
       }
     }
   }
@@ -266,6 +363,7 @@ fn main {
       println("未知命令：" + command)
       println("")
       print_usage()
+      fail_exit()
     }
   }
 }

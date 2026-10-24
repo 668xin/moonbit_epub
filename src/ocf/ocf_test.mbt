@@ -165,6 +165,7 @@ test "PackageOptions: 规范默认值" {
   assert_eq(options.language, "")
   assert_false(options.use_descriptors)
   assert_eq(options.stylesheets.length(), 0)
+  assert_eq(options.media_overlays.length(), 0)
 }
 
 ///|
@@ -230,4 +231,12 @@ test "package_book: 样式表注入增大内容文档" {
   let b = entry_uncompressed_size(packaged, "OEBPS/text/ch1.xhtml")
   assert_true(a > 0)
   assert_true(b > a)
+}
+
+///|
+test "package_book: Media Overlay 文件写入容器" {
+  let options = PackageOptions::new()
+  options.add_media_overlay("text/ch1.smil", "text/ch1.xhtml", "<smil/>")
+  let names = zip_names(package_book(sample_book(), options))
+  assert_eq(names[names.length() - 1], "OEBPS/text/ch1.smil")
 }

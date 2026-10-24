@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/debug",
+  "668xin/moon_epub/src/model",
 }
 
 // 与 model 包同因：公开类型上的 derive 会触发工具链

@@ -146,10 +146,17 @@ pub fn path_join(dir : String, name : String) -> String {
 }
 
 ///|
-/// 规范化路径：合并重复 `/`、解析 `.` 与 `..`、去除末尾 `/`。
+/// 规范化路径：统一 `/` 与 `\` 分隔符、合并重复 `/`、解析 `.` 与 `..`、
+/// 去除末尾 `/`。
 ///
 /// 绝对路径保留开头的 `/`；上溯越过根目录时不再保留 `..`。
 pub fn normalize_path(path : String) -> String {
+  let chars = path.to_array()
+  let buf : Array[Char] = []
+  for c in chars {
+    buf.push(if c == '\\' { '/' } else { c })
+  }
+  let path = String::from_array(buf)
   let absolute = path.has_prefix("/")
   let parts : Array[String] = []
   for seg in path.split("/") {
@@ -185,4 +192,43 @@ pub fn normalize_path(path : String) -> String {
   } else {
     String::from_array(out)
   }
+}
+
+///|
+/// 把文本规范化为可安全用作单一路径段的字符串。
+///
+/// `/`、`\`、`:`、`?`、`#` 会被替换为 `-`，避免章节 ID 被解释为目录穿越、
+/// 绝对路径或查询串。
+pub fn safe_path_segment(text : String) -> String {
+  let out : Array[Char] = []
+  for c in text {
+    if c == '/' || c == '\\' || c == ':' || c == '?' || c == '#' {
+      out.push('-')
+    } else {
+      out.push(c)
+    }
+  }
+  String::from_array(out)
+}
+
+///|
+/// 判断路径是否为安全的容器内相对路径。
+///
+/// 拒绝空路径、绝对路径、上溯越过根目录的 `..`、Windows 盘符与协议式
+/// 冒号；反斜杠会先按 `/` 处理。
+pub fn is_safe_relative_path(path : String) -> Bool {
+  if path.is_empty() {
+    return false
+  }
+  let normalized = normalize_path(path)
+  if normalized == "." || normalized == ".." {
+    return false
+  }
+  if normalized.has_prefix("/") || normalized.has_prefix("../") {
+    return false
+  }
+  if normalized.contains(":") {
+    return false
+  }
+  true
 }

@@ -269,3 +269,25 @@ pub fn parse_cfi(text : String) -> Cfi? {
   }
   Some({ segments, offset, })
 }
+
+///|
+/// 依据书籍阅读顺序定位章节内容文档，返回指向该文档的 CFI。
+///
+/// 例如阅读顺序中的第一章返回 `epubcfi(/6/2)`，第二章返回
+/// `epubcfi(/6/4)`：`/6` 定位 `spine`，后续偶数步定位 `itemref`。
+pub fn chapter_cfi(book : @model.Book, chapter_id : String) -> Cfi? {
+  let mut index = -1
+  for i, item in book.spine.items {
+    if item.idref == chapter_id {
+      index = i
+      break
+    }
+  }
+  if index < 0 {
+    return None
+  }
+  let cfi = Cfi::new()
+  cfi.push(6)
+  cfi.push((index + 1) * 2)
+  Some(cfi)
+}

@@ -157,6 +157,21 @@ test "render_inlines: 脚注引用带编号与 epub:type 语义" {
 }
 
 ///|
+test "render_inlines: 同一脚注多次引用生成唯一 ref id" {
+  let rendered = render_inlines([
+    @model.Inline::footnote_ref("n1"),
+    @model.Inline::text("，"),
+    @model.Inline::footnote_ref("n1"),
+    @model.Inline::text("，"),
+    @model.Inline::footnote_ref("n1"),
+  ])
+  assert_true(rendered.contains("id=\"ref-n1\""))
+  assert_true(rendered.contains("id=\"ref-n1-2\""))
+  assert_true(rendered.contains("id=\"ref-n1-3\""))
+  assert_true(rendered.contains("<sup>1</sup>"))
+}
+
+///|
 test "render_block: 脚注正文为语义化 aside" {
   let note = @model.Block::note("n1", [@model.Block::paragraph("注文")])
   assert_eq(
